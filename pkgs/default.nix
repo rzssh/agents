@@ -1,10 +1,6 @@
 { pkgs, inputs }:
 
 let
-  llamaPkgs = import inputs.nixpkgs-llamacpp {
-    system = pkgs.stdenv.hostPlatform.system;
-    config.allowUnfree = true;
-  };
   hermes = pkgs.callPackage "${inputs.hermes-agent}/nix/hermes-agent.nix" {
     inherit (inputs.hermes-agent.inputs) uv2nix pyproject-nix pyproject-build-systems;
     npm-lockfile-fix =
@@ -53,7 +49,6 @@ in
     hash = "sha256-IcApX4Qpx7oy5x5uaeOlIFC/6pr/kjjcjjPjmCXk2DI=";
     pnpmHash = "sha256-ssuzj9LP5gvFJqtcbATRikCdefLKWPNzaa+5n26ggiI=";
   };
-  llama-cpp-cuda = llamaPkgs.llama-cpp.override { cudaSupport = true; };
   no-mistakes = pkgs.callPackage ./no-mistakes/package.nix { };
   pi-coding-agent = pkgs.callPackage ./pi-coding-agent/package.nix {
     src = inputs.pi-coding-agent-src;

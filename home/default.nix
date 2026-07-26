@@ -179,7 +179,6 @@ in
     localPkgs.chrome-devtools-mcp
     localPkgs.gh-axi
     localPkgs.lavish-axi
-    localPkgs.llama-cpp-cuda
     localPkgs.no-mistakes
     localPkgs.quota-axi
     localPkgs.tasks-axi
