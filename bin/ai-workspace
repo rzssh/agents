@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+profile_re='^[A-Za-z0-9][A-Za-z0-9._-]*$'
+workspace_re='^[A-Za-z0-9:_-]+$'
+profile_suffix_re='^(.*) \| \[([A-Za-z0-9][A-Za-z0-9._-]*)\]$'
+
+clean_profile_environment() {
+    local clean_env=(env -i)
+    local key
+    for key in HOME PATH LANG LC_ALL TERM XDG_CONFIG_HOME XDG_RUNTIME_DIR HERDR_CONFIG_PATH HERDR_SESSION HERDR_SOCKET_PATH; do
+        if [[ -v $key ]]; then
+            clean_env+=("$key=${!key}")
+        fi
+    done
+    "${clean_env[@]}" "$@"
+}
+
+workspace_info() {
+    clean_profile_environment herdr workspace get "$1"
+}
+
+workspace_label() {
+    workspace_info "$1" | jq -er '.result.workspace.label'
+}
+
+profile_from_label() {
+    if [[ $1 =~ $profile_suffix_re ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+        return
+    fi
+    return 1
+}
+
+current_profile() {
+    if [[ -n ${HERDR_WORKSPACE_ID:-} && $HERDR_WORKSPACE_ID =~ $workspace_re ]]; then
+        local label
+        if label=$(workspace_label "$HERDR_WORKSPACE_ID" 2>/dev/null); then
+            profile_from_label "$label" && return
+        fi
+    fi
+    printf '%s\n' "${AI_PROFILE:-${AI_DEFAULT_PROFILE:-personal}}"
+}
+
+workspace_path() {
+    local root
+    if command -v jj >/dev/null && root=$(cd "$1" && jj root 2>/dev/null); then
+        realpath -- "$root"
+    elif root=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null); then
+        realpath -- "$root"
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
+default_push_remote() {
+    local cwd=$1
+    local branch=$2
+    local remote
+    local remotes=()
+    if command -v jj >/dev/null && jj -R "$cwd" root >/dev/null 2>&1; then
+        if remote=$(jj -R "$cwd" config get git.push 2>/dev/null) && [[ -n $remote ]]; then
+            printf '%s\n' "$remote"
+            return 0
+        fi
+    fi
+    for key in "branch.$branch.pushRemote" remote.pushDefault "branch.$branch.remote"; do
+        if remote=$(git -C "$cwd" config --get "$key" 2>/dev/null) && [[ -n $remote && $remote != . ]]; then
+            printf '%s\n' "$remote"
+            return 0
+        fi
+    done
+    mapfile -t remotes < <(git -C "$cwd" remote 2>/dev/null)
+    if (( ${#remotes[@]} == 1 )); then
+        printf '%s\n' "${remotes[0]}"
+    else
+        for remote in "${remotes[@]}"; do
+            if [[ $remote == origin ]]; then
+                printf 'origin\n'
+                return 0
+            fi
+        done
+        return 1
+    fi
+}
+
+ensure_git_upstream() {
+    local cwd=$1
+    local branch
+    local remote
+    branch=$(git -C "$cwd" branch --show-current 2>/dev/null) || return 0
+    [[ -n $branch ]] || return 0
+    git -C "$cwd" rev-parse --verify --quiet '@{upstream}' >/dev/null && return 0
+    if remote=$(default_push_remote "$cwd" "$branch") &&
+        git -C "$cwd" show-ref --verify --quiet "refs/remotes/$remote/$branch"; then
+        git -C "$cwd" branch --set-upstream-to="$remote/$branch" -- "$branch" >/dev/null 2>&1 || true
+    fi
+    return 0
+}
+
+set_profile() {
+    local workspace_id=$1
+    local profile=$2
+    local cwd=$3
+    local label
+    local desired
+    label=$(workspace_label "$workspace_id")
+    desired="$(basename -- "$(workspace_path "$cwd")") | [$profile]"
+    if [[ $label != "$desired" ]]; then
+        clean_profile_environment herdr workspace rename "$workspace_id" "$desired" >/dev/null
+    fi
+    refresh_metadata "$workspace_id" "$cwd"
+}
+
+vcs_state() {
+    local output
+    if command -v jj >/dev/null && output=$(jj -R "$1" diff --summary 2>/dev/null); then
+        if [[ -n $output ]]; then
+            awk 'NF { changed++ } END { printf "~%d\n", changed }' <<< "$output"
+        fi
+    elif output=$(git -C "$1" status --porcelain=v1 --untracked-files=normal 2>/dev/null); then
+        if [[ -n $output ]]; then
+            awk '
+            substr($0, 1, 2) == "??" { untracked++; next }
+            substr($0, 1, 2) ~ /^(DD|AU|UD|UA|DU|AA|UU)$/ { conflicted++; next }
+            substr($0, 1, 1) != " " { staged++ }
+            substr($0, 2, 1) != " " { changed++ }
+            END {
+                separator = ""
+                if (conflicted) { printf "!%d", conflicted; separator = " " }
+                if (staged) { printf "+%d", staged; separator = " " }
+                if (changed) { printf "%s~%d", separator, changed; separator = " " }
+                if (untracked) { printf "%s?%d", separator, untracked }
+                printf "\n"
+            }
+            ' <<< "$output"
+        fi
+    else
+        return 1
+    fi
+}
+
+refresh_metadata() {
+    local workspace_id=$1
+    local cwd=$2
+    local label
+    local profile
+    local desired
+    local path
+    local state
+    label=$(workspace_label "$workspace_id")
+    profile=$(profile_from_label "$label" || printf '%s\n' "${AI_PROFILE:-${AI_DEFAULT_PROFILE:-personal}}")
+    path=$(workspace_path "$cwd")
+    desired="$(basename -- "$path") | [$profile]"
+    if [[ $label != "$desired" ]]; then
+        clean_profile_environment herdr workspace rename "$workspace_id" "$desired" >/dev/null
+    fi
+    ensure_git_upstream "$cwd"
+    local metadata=(--source ai-workspace --token "workspace_path=$path")
+    if state=$(vcs_state "$cwd"); then
+        metadata+=(--clear-token no_vcs)
+        if [[ -n $state ]]; then
+            metadata+=(--token "vcs_state=$state")
+        else
+            metadata+=(--clear-token vcs_state)
+        fi
+    else
+        metadata+=(--clear-token vcs_state --token "no_vcs=—")
+    fi
+    clean_profile_environment herdr workspace report-metadata "$workspace_id" \
+        "${metadata[@]}" >/dev/null
+}
+
+find_workspace() {
+    local label=$1
+    local path=$2
+    clean_profile_environment herdr workspace list | jq -er --arg label "$label" --arg path "$path" '
+        [.result.workspaces[] | select(.label == $label)] as $matches
+        | first($matches[] | select(.tokens.workspace_path? == $path) | .workspace_id) //
+          if ($matches | length) == 1 and $matches[0].tokens.workspace_path? == null
+          then $matches[0].workspace_id
+          else empty
+          end
+    '
+}
+
+validate_profile() {
+    if [[ ! $1 =~ $profile_re ]]; then
+        printf 'ai-workspace: invalid profile: %s\n' "$1" >&2
+        exit 2
+    fi
+    ai-run --check "$1"
+}
+
+resolve_cwd() {
+    if [[ ! -d $1 ]]; then
+        printf 'ai-workspace: directory not found: %s\n' "$1" >&2
+        exit 2
+    fi
+    realpath -- "$1"
+}
+
+if [[ ${1:-} == --current-profile ]]; then
+    current_profile
+    exit 0
+fi
+
+if [[ ${1:-} == --set-profile || ${1:-} == --bind-profile ]]; then
+    workspace_id=${2:-}
+    profile=${3:-}
+    if [[ ! $workspace_id =~ $workspace_re ]]; then
+        printf 'ai-workspace: invalid workspace ID: %s\n' "$workspace_id" >&2
+        exit 2
+    fi
+    validate_profile "$profile"
+    cwd=$(resolve_cwd "${4:-$PWD}")
+    set_profile "$workspace_id" "$profile" "$cwd"
+    exit 0
+fi
+
+if [[ ${1:-} == --refresh-metadata ]]; then
+    workspace_id=${2:-}
+    if [[ ! $workspace_id =~ $workspace_re ]]; then
+        printf 'ai-workspace: invalid workspace ID: %s\n' "$workspace_id" >&2
+        exit 2
+    fi
+    cwd=$(resolve_cwd "${3:-$PWD}")
+    refresh_metadata "$workspace_id" "$cwd"
+    exit 0
+fi
+
+if [[ ${1:-} == --refresh-event ]]; then
+    workspace_id=${HERDR_WORKSPACE_ID:-}
+    if [[ ! $workspace_id =~ $workspace_re ]]; then
+        exit 0
+    fi
+    context=${HERDR_PLUGIN_CONTEXT_JSON:-}
+    [[ -n $context ]] || exit 0
+    cwd=$(jq -er '.focused_pane_cwd // .workspace_cwd // empty' \
+        <<< "$context" 2>/dev/null) || exit 0
+    [[ -d $cwd ]] || exit 0
+    refresh_metadata "$workspace_id" "$(realpath -- "$cwd")"
+    exit 0
+fi
+
+if [[ ${1:-} == -h || ${1:-} == --help ]]; then
+    printf 'usage: ai-workspace [profile] [cwd]\n'
+    exit 0
+fi
+
+profile=${1:-${AI_PROFILE:-${AI_DEFAULT_PROFILE:-personal}}}
+validate_profile "$profile"
+cwd=$(resolve_cwd "${2:-$PWD}")
+path=$(workspace_path "$cwd")
+label="$(basename -- "$path") | [$profile]"
+
+if workspace_id=$(find_workspace "$label" "$path"); then
+    set_profile "$workspace_id" "$profile" "$cwd"
+    clean_profile_environment herdr workspace focus "$workspace_id" >/dev/null
+    exit 0
+fi
+
+output=$(clean_profile_environment herdr workspace create --cwd "$cwd" --label "$label" \
+    --env "AI_PROFILE=$profile" --focus)
+printf '%s\n' "$output"
+workspace_id=$(jq -er '.result.workspace.workspace_id' <<< "$output") || {
+    printf 'ai-workspace: Herdr response missing workspace ID\n' >&2
+    exit 2
+}
+set_profile "$workspace_id" "$profile" "$cwd"

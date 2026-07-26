@@ -1,0 +1,82 @@
+{
+  "effortLevel": "high",
+  "enabledPlugins": {
+    "caveman@caveman": true,
+    "ponytail@ponytail": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "repo": "JuliusBrussee/caveman",
+        "source": "github"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "repo": "DietrichGebert/ponytail",
+        "source": "github"
+      }
+    }
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "deny": [
+      "Read(~/.local/share/ai/profiles/**)",
+      "Read(~/.config/sops/**)",
+      "Read(//run/user/1000/secrets.d/**)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.codex/auth.json)",
+      "Read(~/.pi/agent/auth.json)",
+      "Read(~/.hermes/auth.json)",
+      "Read(~/.local/share/opencode/auth.json)"
+    ]
+  },
+  "sandbox": {
+    "allowUnsandboxedCommands": false,
+    "autoAllowBashIfSandboxed": true,
+    "enabled": true,
+    "failIfUnavailable": false,
+    "credentials": {
+      "envVars": [
+        {
+          "mode": "deny",
+          "name": "ANTHROPIC_API_KEY"
+        },
+        {
+          "mode": "deny",
+          "name": "ANTHROPIC_AUTH_TOKEN"
+        },
+        {
+          "mode": "deny",
+          "name": "CLAUDE_CODE_OAUTH_TOKEN"
+        }
+      ],
+      "files": []
+    },
+    "filesystem": {
+      "allowWrite": [
+        "~"
+      ],
+      "denyRead": [],
+      "denyWrite": [
+        "~/.local/share/ai/profiles",
+        "~/.config/sops",
+        "/run/user/1000/secrets.d",
+        "~/.claude/.credentials.json",
+        "~/.codex/auth.json",
+        "~/.pi/agent/auth.json",
+        "~/.hermes/auth.json",
+        "~/.local/share/opencode/auth.json"
+      ]
+    },
+    "network": {
+      "allowAllUnixSockets": true,
+      "allowedDomains": [
+        "*"
+      ]
+    }
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark",
+  "tui": "fullscreen"
+}

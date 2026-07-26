@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture Knowledge"
+  short_description: "Route durable knowledge into personal notes"
+  default_prompt: "Use $capture-knowledge to classify and store this durable insight without polluting the project repository."

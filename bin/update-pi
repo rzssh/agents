@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+package_file="$root/pkgs/pi-coding-agent/package.nix"
+flake_file="$root/flake.nix"
+lock_file="$root/flake.lock"
+package="@earendil-works/pi-coding-agent"
+current="$(sed -n 's/^  version = "\([^"]*\)";$/\1/p' "$package_file")"
+latest="$(npm view "$package@latest" version)"
+
+if [[ -z "$current" || -z "$latest" ]]; then
+	printf 'update-pi: could not resolve current or latest version\n' >&2
+	exit 1
+fi
+
+if [[ "$current" == "$latest" ]]; then
+	printf 'Pi already current: %s\n' "$current"
+	exit 0
+fi
+
+backup="$(mktemp -d)"
+cp "$flake_file" "$lock_file" "$package_file" "$backup/"
+complete=0
+
+cleanup() {
+	if [[ "$complete" -eq 0 ]]; then
+		cp "$backup/flake.nix" "$flake_file"
+		cp "$backup/flake.lock" "$lock_file"
+		cp "$backup/package.nix" "$package_file"
+	fi
+	rm -rf -- "$backup"
+}
+trap cleanup EXIT
+
+dependency_integrity() {
+	local dependency="$1"
+	local spec
+	spec="$(npm view "$package@$latest" "dependencies.$dependency")"
+	npm view "$dependency@$spec" dist.integrity
+}
+
+replace_integrity() {
+	local dependency="$1"
+	local integrity="$2"
+	MODULE="$dependency" INTEGRITY="$integrity" perl -0pi -e '
+		my $module = quotemeta $ENV{"MODULE"};
+		my $integrity = $ENV{"INTEGRITY"};
+		my $count = s{(\.packages\["node_modules/$module"\]\.integrity = ")[^"]+(")}{$1 . $integrity . $2}e;
+		die "missing integrity field for $ENV{MODULE}\n" unless $count == 1;
+	' "$package_file"
+}
+
+OLD_VERSION="$current" NEW_VERSION="$latest" perl -0pi -e '
+	my $count = s{\Q$ENV{"OLD_VERSION"}\E}{$ENV{"NEW_VERSION"}}g;
+	die "version not found\n" unless $count >= 1;
+' "$flake_file" "$package_file"
+
+replace_integrity "@earendil-works/pi-agent-core" "$(dependency_integrity "@earendil-works/pi-agent-core")"
+replace_integrity "@earendil-works/pi-ai" "$(dependency_integrity "@earendil-works/pi-ai")"
+replace_integrity "@earendil-works/pi-tui" "$(dependency_integrity "@earendil-works/pi-tui")"
+
+perl -0pi -e '
+	my $count = s{npmDepsHash = (?:"[^"]+"|lib\.fakeHash);}{npmDepsHash = lib.fakeHash;};
+	die "npmDepsHash not found\n" unless $count == 1;
+' "$package_file"
+
+cd "$root"
+nix flake update pi-coding-agent-src
+
+if nix build .#pi-coding-agent --no-link >"$backup/hash.log" 2>&1; then
+	printf 'update-pi: fake npm hash unexpectedly built\n' >&2
+	exit 1
+fi
+
+npm_hash="$(sed -n 's/.*got: *\(sha256-[A-Za-z0-9+\/=]*\).*/\1/p' "$backup/hash.log" | tail -n 1)"
+if [[ -z "$npm_hash" ]]; then
+	tail -n 30 "$backup/hash.log" >&2
+	printf 'update-pi: could not extract npm dependency hash\n' >&2
+	exit 1
+fi
+
+NPM_DEPS_HASH="$npm_hash" perl -0pi -e '
+	my $count = s{npmDepsHash = lib\.fakeHash;}{npmDepsHash = "$ENV{NPM_DEPS_HASH}";};
+	die "fake npmDepsHash not found\n" unless $count == 1;
+' "$package_file"
+
+output="$(nix build .#pi-coding-agent --no-link --print-out-paths)"
+"$output/bin/pi" --version
+
+firstmate="${FIRSTMATE_ROOT:-${PI_PROJECTS_ROOT:-$HOME/projects}/firstmate}"
+if [[ -x "$firstmate/tests/fm-pi-primary-types.test.sh" ]]; then
+	FM_PI_PACKAGE_DIR="$output/lib/node_modules/@earendil-works/pi-coding-agent" \
+		"$firstmate/tests/fm-pi-primary-types.test.sh"
+fi
+
+complete=1
+printf 'Updated Pi %s -> %s. Run just switch to activate.\n' "$current" "$latest"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Herdr Agent Comms"
+  short_description: "Coordinate lead and worker panes safely"
+  default_prompt: "Use $herdr-agent-comms to identify my related Herdr agent and exchange a concise update."

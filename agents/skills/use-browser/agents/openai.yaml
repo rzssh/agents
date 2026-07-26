@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Browser"
+  short_description: "Inspect and automate rendered browser pages"
+  default_prompt: "Use $use-browser to inspect and interact with this page."

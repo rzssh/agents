@@ -1,0 +1,8 @@
+{
+  "name": "babysitter-nix",
+  "private": true,
+  "version": "6.0.2",
+  "dependencies": {
+    "@a5c-ai/babysitter-sdk": "6.0.2"
+  }
+}

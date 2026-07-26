@@ -1,0 +1,4 @@
+interface:
+  display_name: "Teach Code"
+  short_description: "Learn programming through real project work"
+  default_prompt: "Use $teach-code to teach me while we build this feature."

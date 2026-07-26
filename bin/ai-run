@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+import ast
+import os
+import re
+import stat
+import sys
+from pathlib import Path
+
+
+PROFILE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+SAFE_KEYS = {
+    "AI_DEFAULT_PROFILE",
+    "AI_PROFILES_DIR",
+    "CARGO_HOME",
+    "CAVEMAN_DEFAULT_MODE",
+    "CHROME_DEVTOOLS_AXI_MCP_PATH",
+    "CHROME_DEVTOOLS_EXECUTABLE_PATH",
+    "COLORTERM",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "DISPLAY",
+    "EDITOR",
+    "HOME",
+    "LANG",
+    "LOGNAME",
+    "NPM_CONFIG_CACHE",
+    "OPENSPEC_TELEMETRY",
+    "PAGER",
+    "PATH",
+    "PI_PROJECTS_ROOT",
+    "PI_SANDBOX_BWRAP_PATH",
+    "PI_SANDBOX_RG_PATH",
+    "PI_SANDBOX_RUNTIME_PATH",
+    "PONYTAIL_DEFAULT_MODE",
+    "SEARXNG_URL",
+    "SHELL",
+    "SSL_CERT_DIR",
+    "SSL_CERT_FILE",
+    "TERM",
+    "TERMINFO",
+    "TERMINFO_DIRS",
+    "TERM_PROGRAM",
+    "TMPDIR",
+    "USER",
+    "VISUAL",
+    "WAYLAND_DISPLAY",
+    "XAUTHORITY",
+    "XDG_CACHE_HOME",
+    "XDG_CONFIG_HOME",
+    "XDG_CURRENT_DESKTOP",
+    "XDG_DATA_DIRS",
+    "XDG_DATA_HOME",
+    "XDG_RUNTIME_DIR",
+    "XDG_SESSION_DESKTOP",
+    "XDG_SESSION_TYPE",
+    "XDG_STATE_HOME",
+}
+SAFE_PREFIXES = ("HERDR_", "LC_", "NIX_")
+HOME_KEYS = {
+    "CLAUDE_CONFIG_DIR",
+    "CODEX_HOME",
+    "HERMES_HOME",
+    "OPENCODE_CONFIG_DIR",
+    "PI_CODING_AGENT_DIR",
+    "XDG_CACHE_HOME",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_STATE_HOME",
+}
+AGENT_HOME_KEYS = {
+    "CLAUDE_CONFIG_DIR",
+    "CODEX_HOME",
+    "HERMES_HOME",
+    "OPENCODE_CONFIG_DIR",
+    "PI_CODING_AGENT_DIR",
+}
+RUNTIME_KEYS = AGENT_HOME_KEYS | {
+    "AI_PROFILE",
+    "AI_PROFILE_KEYS",
+    "GH_CONFIG_DIR",
+    "GIT_CONFIG_GLOBAL",
+}
+RESERVED_KEYS = SAFE_KEYS | RUNTIME_KEYS
+
+
+def fail(message):
+    print(f"ai-run: {message}", file=sys.stderr)
+    raise SystemExit(2)
+
+
+def parse_assignment(raw, option):
+    if "=" not in raw:
+        fail(f"{option} requires KEY=VALUE")
+    key, value = raw.split("=", 1)
+    if not KEY_RE.fullmatch(key):
+        fail(f"invalid runtime key: {key}")
+    if key not in HOME_KEYS and option != "--set":
+        fail(f"unsupported home key: {key}")
+    return key, value
+
+
+def arguments():
+    raw = sys.argv[1:]
+    if raw in (["-h"], ["--help"]):
+        print(
+            "usage: ai-run [--all-credentials | --credential KEY ...] "
+            "[--home KEY=PERSONAL:NAMED ...] [--set KEY=VALUE ...] "
+            "[profile] -- command [args...]"
+        )
+        raise SystemExit(0)
+    credentials = set()
+    homes = []
+    values = {}
+    all_credentials = False
+    action = "run"
+    index = 0
+    while index < len(raw) and raw[index].startswith("--"):
+        option = raw[index]
+        if option == "--":
+            break
+        if option == "--all-credentials":
+            all_credentials = True
+            index += 1
+            continue
+        if option in {"--check", "--workspace-env"}:
+            if action != "run":
+                fail("only one action may be selected")
+            action = option.removeprefix("--")
+            index += 1
+            continue
+        if option in {"--credential", "--home", "--set"}:
+            if index + 1 >= len(raw):
+                fail(f"missing value for {option}")
+            item = raw[index + 1]
+            if option == "--credential":
+                if not KEY_RE.fullmatch(item) or item in RESERVED_KEYS:
+                    fail(f"invalid credential key: {item}")
+                credentials.add(item)
+            elif option == "--home":
+                homes.append(parse_assignment(item, option))
+            else:
+                key, value = parse_assignment(item, option)
+                if key in RESERVED_KEYS or key.startswith(SAFE_PREFIXES):
+                    fail(f"cannot override runtime key: {key}")
+                values[key] = value
+            index += 2
+            continue
+        fail(f"unknown option: {option}")
+
+    remainder = raw[index:]
+    if "--" in remainder:
+        split = remainder.index("--")
+        if split > 1:
+            fail("expected at most one profile")
+        profile = remainder[0] if split else default_profile()
+        command = remainder[split + 1 :]
+    else:
+        if action == "run":
+            fail("missing -- command")
+        if len(remainder) > 1:
+            fail("expected at most one profile")
+        profile = remainder[0] if remainder else default_profile()
+        command = []
+
+    if not PROFILE_RE.fullmatch(profile):
+        fail(f"invalid profile: {profile}")
+    if action == "run" and not command:
+        fail("missing command")
+    if all_credentials and credentials:
+        fail("--all-credentials cannot be combined with --credential")
+    return {
+        "action": action,
+        "all_credentials": all_credentials,
+        "command": command,
+        "credentials": credentials,
+        "homes": homes,
+        "profile": profile,
+        "values": values,
+    }
+
+
+def default_profile():
+    return os.environ.get("AI_PROFILE") or os.environ.get(
+        "AI_DEFAULT_PROFILE", "personal"
+    )
+
+
+def parse_value(raw, line):
+    raw = raw.strip()
+    if not raw:
+        return ""
+    if raw[0] in "\"'":
+        try:
+            parsed = ast.literal_eval(raw)
+        except (SyntaxError, ValueError):
+            fail(f"invalid quoted value on line {line}")
+        if not isinstance(parsed, str):
+            fail(f"non-string value on line {line}")
+        return parsed
+    return raw
+
+
+def load(path):
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        fail(f"profile file not found: {path}")
+    if not stat.S_ISREG(info.st_mode):
+        fail(f"profile path is not a regular file: {path}")
+    if info.st_uid != os.getuid():
+        fail(f"profile file is not owned by current user: {path}")
+    if info.st_mode & 0o077:
+        fail(f"profile file must be private (0600 or stricter): {path}")
+    result = {}
+    for number, raw in enumerate(path.read_text().splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        line = line.removeprefix("export ").lstrip()
+        if "=" not in line:
+            fail(f"invalid assignment on line {number}")
+        key, raw_value = line.split("=", 1)
+        key = key.strip()
+        if not KEY_RE.fullmatch(key):
+            fail(f"invalid key on line {number}: {key}")
+        if key in RESERVED_KEYS or key.startswith(SAFE_PREFIXES):
+            fail(f"profile cannot override runtime key: {key}")
+        result[key] = parse_value(raw_value, number)
+    return result
+
+
+def check_directory(path):
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        fail(f"profile directory not found: {path}")
+    if not stat.S_ISDIR(info.st_mode):
+        fail(f"profile path is not a directory: {path}")
+    if info.st_uid != os.getuid():
+        fail(f"profile directory is not owned by current user: {path}")
+    if info.st_mode & 0o077:
+        fail(f"profile directory must be private (0700 or stricter): {path}")
+
+
+def profile_root(home):
+    return Path(
+        os.environ.get("AI_PROFILES_DIR", home / ".local" / "share" / "ai" / "profiles")
+    ).expanduser()
+
+
+def env_keys(path):
+    try:
+        lines = path.read_text().splitlines()
+    except (OSError, UnicodeError):
+        return set()
+    keys = set()
+    for raw in lines:
+        line = raw.strip().removeprefix("export ").lstrip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key = line.split("=", 1)[0].strip()
+        if (
+            KEY_RE.fullmatch(key)
+            and key not in RESERVED_KEYS
+            and not key.startswith(SAFE_PREFIXES)
+        ):
+            keys.add(key)
+    return keys
+
+
+def profile_keys(home):
+    root = profile_root(home)
+    keys = set()
+    if root.is_dir():
+        for directory in root.iterdir():
+            if directory.is_dir() and PROFILE_RE.fullmatch(directory.name):
+                keys.update(env_keys(directory / "env"))
+    return keys
+
+
+def common_paths(profile, directory, home):
+    if profile == "personal":
+        return {
+            "GH_CONFIG_DIR": home / ".config" / "gh",
+            "GIT_CONFIG_GLOBAL": home / ".gitconfig",
+        }
+    return {
+        "GH_CONFIG_DIR": directory / "gh",
+        "GIT_CONFIG_GLOBAL": directory / "gitconfig",
+    }
+
+
+def resolve_home(spec, profile, directory, home):
+    key, raw = spec
+    if ":" not in raw:
+        fail(f"home {key} requires PERSONAL:NAMED")
+    personal, named = raw.split(":", 1)
+    if not personal or not named:
+        fail(f"home {key} requires PERSONAL:NAMED")
+    if profile == "personal":
+        path = Path(personal).expanduser()
+        return path if path.is_absolute() else home / path
+    relative = Path(named)
+    if relative.is_absolute() or ".." in relative.parts:
+        fail(f"named home must stay inside profile: {named}")
+    return directory / relative
+
+
+def ensure_paths(paths, profile, home):
+    for key, path in paths.items():
+        if key == "GIT_CONFIG_GLOBAL":
+            path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            if profile != "personal" and not path.exists():
+                path.write_text(f"[include]\n\tpath = {home / '.gitconfig'}\n")
+                path.chmod(0o600)
+            continue
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+
+def clean_environment(home):
+    keys = profile_keys(home)
+    keys.update(
+        key
+        for key in os.environ.get("AI_PROFILE_KEYS", "").split(",")
+        if KEY_RE.fullmatch(key) and key not in RESERVED_KEYS
+    )
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if key not in keys
+        and key not in RUNTIME_KEYS
+    }
+
+
+def write_workspace_environment(profile, paths):
+    values = {"AI_PROFILE": profile, **{key: str(path) for key, path in paths.items()}}
+    for key in ("AI_PROFILE", "GIT_CONFIG_GLOBAL", "GH_CONFIG_DIR"):
+        print(f"{key}={values[key]}", end="\0")
+
+
+def main():
+    home = Path(os.environ.get("HOME", "~")).expanduser()
+    options = arguments()
+    profile = options["profile"]
+    directory = profile_root(home) / profile
+    check_directory(directory)
+    profile_env = load(directory / "env")
+    paths = common_paths(profile, directory, home)
+    for spec in options["homes"]:
+        key = spec[0]
+        if key in paths:
+            fail(f"duplicate home key: {key}")
+        paths[key] = resolve_home(spec, profile, directory, home)
+    ensure_paths(paths, profile, home)
+
+    if options["action"] == "check":
+        return
+    if options["action"] == "workspace-env":
+        write_workspace_environment(profile, paths)
+        return
+
+    environment = clean_environment(home)
+    if options["all_credentials"]:
+        environment.update(profile_env)
+    else:
+        environment.update(
+            {key: profile_env[key] for key in options["credentials"] if key in profile_env}
+        )
+    environment.update(options["values"])
+    environment.update({key: str(path) for key, path in paths.items()})
+    environment["AI_PROFILE"] = profile
+    environment["AI_PROFILE_KEYS"] = ",".join(sorted(profile_env))
+    os.execvpe(options["command"][0], options["command"], environment)
+
+
+if __name__ == "__main__":
+    main()

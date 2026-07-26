@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+PROFILE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def fail(message):
+    print(f"ai-workspace-picker: {message}", file=sys.stderr)
+    raise SystemExit(2)
+
+
+def source_context():
+    pane = os.environ.get("HERDR_ACTIVE_PANE_ID") or os.environ.get("HERDR_PANE_ID")
+    if not pane:
+        return os.getcwd(), os.environ.get("HERDR_WORKSPACE_ID", "")
+    herdr = os.environ.get("HERDR_BIN_PATH", "herdr")
+    result = subprocess.run(
+        [herdr, "pane", "get", pane], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        return os.getcwd(), os.environ.get("HERDR_WORKSPACE_ID", "")
+    try:
+        info = json.loads(result.stdout)["result"]["pane"]
+    except (KeyError, TypeError, json.JSONDecodeError):
+        return os.getcwd(), os.environ.get("HERDR_WORKSPACE_ID", "")
+    cwd = info.get("foreground_cwd") or info.get("cwd") or os.getcwd()
+    return cwd, info.get("workspace_id") or os.environ.get("HERDR_WORKSPACE_ID", "")
+
+
+def current_profile(workspace):
+    default = os.environ.get("AI_DEFAULT_PROFILE", "personal")
+    if not workspace:
+        return os.environ.get("AI_PROFILE") or default
+    env = os.environ.copy()
+    env.pop("AI_PROFILE", None)
+    env["HERDR_WORKSPACE_ID"] = workspace
+    result = subprocess.run(
+        ["ai-workspace", "--current-profile"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    return result.stdout.strip() if result.returncode == 0 else default
+
+
+def profile_names(current):
+    home = Path(os.environ.get("HOME", "~")).expanduser()
+    root = Path(
+        os.environ.get("AI_PROFILES_DIR", home / ".local" / "share" / "ai" / "profiles")
+    ).expanduser()
+    if not root.is_dir():
+        fail(f"profile directory not found: {root}")
+    names = [
+        path.name
+        for path in root.iterdir()
+        if path.is_dir()
+        and PROFILE_RE.fullmatch(path.name)
+    ]
+    return sorted(names, key=lambda name: (name != current, name.casefold()))
+
+
+def main():
+    cwd, workspace = source_context()
+    current = current_profile(workspace)
+    names = profile_names(current)
+    if not names:
+        herdr = os.environ.get("HERDR_BIN_PATH", "herdr")
+        subprocess.run(
+            [
+                herdr,
+                "notification",
+                "show",
+                "No AI profiles",
+                "--body",
+                "Add ~/.local/share/ai/profiles/<name>/env (directory 0700, file 0600)",
+            ]
+        )
+        return
+    try:
+        picker = subprocess.run(
+            [
+                "fzf",
+                "--border=none",
+                "--no-multi",
+                "--no-preview",
+                "--prompt=profile> ",
+                f"--header=current: {current}  cwd: {cwd}",
+            ],
+            input="\n".join(names) + "\n",
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        fail("fzf not found")
+    if picker.returncode != 0:
+        return
+    profile = picker.stdout.strip()
+    if profile not in names:
+        fail("invalid selection")
+    raise SystemExit(subprocess.run(["ai-workspace", profile, cwd]).returncode)
+
+
+if __name__ == "__main__":
+    main()

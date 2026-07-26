@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+projects_root="${PI_PROJECTS_ROOT:-$HOME/projects}"
+firstmate_root="${FIRSTMATE_ROOT:-$projects_root/firstmate}"
+firstmate_home="${FM_HOME:-$HOME/.local/share/firstmate}"
+
+if [[ ! -e "$firstmate_root" ]]; then
+	mkdir -p "$(dirname "$firstmate_root")"
+	git clone https://github.com/kunchenguid/firstmate "$firstmate_root"
+elif [[ ! -e "$firstmate_root/.git" ]]; then
+	printf 'firstmate: %s exists but is not a Git checkout\n' "$firstmate_root" >&2
+	exit 1
+fi
+
+mkdir -p "$firstmate_home"/{config,data,projects,state}
+export AI_PROFILE="${AI_PROFILE:-personal}"
+export FM_HOME="$firstmate_home"
+export FM_ROOT_OVERRIDE="$firstmate_root"
+export QUOTA_AXI_CODEX_BINARY="${QUOTA_AXI_CODEX_BINARY:-$HOME/.local/bin/codex}"
+
+cd "$firstmate_root"
+exec pi --approve --model openai-codex/gpt-5.6-sol --thinking xhigh "$@"
