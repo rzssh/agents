@@ -160,7 +160,7 @@ in
   home.sessionVariables = {
     AI_DEFAULT_PROFILE = "personal";
     CARGO_HOME = cargoHome;
-    CAVEMAN_DEFAULT_MODE = "off";
+    CAVEMAN_DEFAULT_MODE = "ultra";
     CHROME_DEVTOOLS_AXI_MCP_PATH = chromeDevtoolsMcpPath;
     CHROME_DEVTOOLS_EXECUTABLE_PATH = lib.getExe pkgs.google-chrome;
     OPENSPEC_TELEMETRY = "0";
@@ -168,7 +168,7 @@ in
     NO_MISTAKES_NO_UPDATE_CHECK = "1";
     NPM_CONFIG_CACHE = npmCache;
     PI_PROJECTS_ROOT = projectsRoot;
-    PONYTAIL_DEFAULT_MODE = "off";
+    PONYTAIL_DEFAULT_MODE = "full";
     QUOTA_AXI_CODEX_BINARY = "${config.home.homeDirectory}/.local/bin/codex";
     SEARXNG_URL = "http://127.0.0.1:8888";
   };
