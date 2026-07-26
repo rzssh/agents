@@ -1,5 +1,5 @@
 {
-  description = "Personal AI agent toolchain";
+  description = "Personal AI agent runtime";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -45,7 +45,7 @@
     in
     {
       checks.${system}.default =
-        pkgs.runCommand "ai-toolchain-check"
+        pkgs.runCommand "agents-check"
           {
             nativeBuildInputs = [
               pkgs.biome
@@ -80,7 +80,7 @@
       formatter.${system} = pkgs.nixfmt-tree;
 
       homeManagerModules.default = import ./home/default.nix {
-        inherit inputs self;
+        inherit inputs;
       };
 
       packages.${system} = packages // {

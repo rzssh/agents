@@ -1,8 +1,8 @@
-# ai-toolchain
+# agents
 
 Personal AI agent runtime, skills, safety policy, launchers, and pinned packages.
 
-Dotfiles consume this repository through its flake. Machine-specific secrets, desktop integration, and service endpoints stay in dotfiles.
+Dotfiles consume this repository through a local flake input. Machine-specific secrets, desktop integration, and service endpoints stay in dotfiles.
 
 ## Layout
 

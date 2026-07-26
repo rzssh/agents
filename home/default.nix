@@ -1,4 +1,4 @@
-{ inputs, self }:
+{ inputs }:
 {
   config,
   pkgs,
@@ -8,8 +8,8 @@
 }:
 
 let
-  source = "${self}";
-  link = path: "${source}/${path}";
+  source = "${config.home.homeDirectory}/projects/agents";
+  link = path: config.lib.file.mkOutOfStoreSymlink "${source}/${path}";
   aiRun = "${lib.getExe pkgs.python3} ${source}/bin/ai-run";
   localPkgs = import ../pkgs { inherit pkgs inputs; };
   inherit (localPkgs)
