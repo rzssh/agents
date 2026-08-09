@@ -35,18 +35,18 @@ in
   crit = inputs.crit.packages.${pkgs.stdenv.hostPlatform.system}.default;
   gh-axi = pkgs.callPackage ./axi/package.nix {
     pname = "gh-axi";
-    version = "0.1.27";
-    tag = "gh-axi-v0.1.27";
-    hash = "sha256-hehWN06+UhCAEACsqn54eNHywlnllY9qHn3c/Fu5Tto=";
-    pnpmHash = "sha256-gLCR/5bGVOyacNU/QjDG8xvf7eg5bMNZ/UBALnTNssg=";
+    version = "0.1.30";
+    tag = "gh-axi-v0.1.30";
+    hash = "sha256-E9SahmNcpY2a1Uy5CqLe3A5BIv1ecO/xZtZd6zGpv5c=";
+    pnpmHash = "sha256-Ps93wg2mN1g1Rq4SY1FuNh8g9CF3o1WjCtioBWLcogU=";
   };
   herdr = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
   inherit hermes openspec;
   lavish-axi = pkgs.callPackage ./axi/package.nix {
     pname = "lavish-axi";
-    version = "0.1.42";
-    tag = "lavish-axi-v0.1.42";
-    hash = "sha256-IcApX4Qpx7oy5x5uaeOlIFC/6pr/kjjcjjPjmCXk2DI=";
+    version = "0.1.47";
+    tag = "lavish-axi-v0.1.47";
+    hash = "sha256-fTu4iv55to5INLrlbb3g2f+IJDGzjuqkOpW1bgrGTm8=";
     pnpmHash = "sha256-ssuzj9LP5gvFJqtcbATRikCdefLKWPNzaa+5n26ggiI=";
   };
   no-mistakes = pkgs.callPackage ./no-mistakes/package.nix { };
@@ -55,17 +55,17 @@ in
   };
   quota-axi = pkgs.callPackage ./axi/package.nix {
     pname = "quota-axi";
-    version = "0.1.7";
-    tag = "quota-axi-v0.1.7";
-    hash = "sha256-M28Lfd5ToIPmSmE14FlB84Iu9kw47UhNyR4Pr9nyM2I=";
-    pnpmHash = "sha256-bz01jPq/aD9AuSyf+7EwE/6ZxxNgCy98vwrRM6b11Yc=";
+    version = "0.1.20";
+    tag = "quota-axi-v0.1.20";
+    hash = "sha256-0c5JLW+uIDrqk+nqJWsbxONVFxQ249AsEUi1Zu9ytKA=";
+    pnpmHash = "sha256-AC2sT4JVE96ebyIPYEihMCn7Gp2sSlIcfeZEvVknjuA=";
   };
   tasks-axi = pkgs.callPackage ./axi/package.nix {
     pname = "tasks-axi";
-    version = "0.2.3";
-    tag = "tasks-axi-v0.2.3";
-    hash = "sha256-ziQJdRYtMsJW9xhRtrBiTjDe/5PcECXrBU9Wt9Tn7Vg=";
-    pnpmHash = "sha256-3KdnJSGunTKVjvB63hb49ODw8ujkTdBNC0f1jHBX0zY=";
+    version = "0.2.5";
+    tag = "tasks-axi-v0.2.5";
+    hash = "sha256-obwgvKls8GljbUdFrl7ht9+k0AEQjdqvLGf4UHscv+M=";
+    pnpmHash = "sha256-vZcUSa35SvRJoaeuSUuDpv54FJRtP1fxv+6+tR9euR0=";
   };
   treehouse = inputs.treehouse.packages.${pkgs.stdenv.hostPlatform.system}.default;
 }
