@@ -7,11 +7,23 @@ import {
 	configuredCachePaths,
 	credentialEnvironmentKeys,
 	deniedWritePath,
+	hasFullHostAccess,
 	projectRootFor,
 	protectedPath,
 	protectedRoots,
+	TRUSTED_MODE_PHRASE,
+	trustedModePhraseMatches,
 	workspaceRoot,
 } from "./sandbox.ts";
+
+test("trusted mode requires an exact session phrase", () => {
+	assert.equal(hasFullHostAccess("strict"), false);
+	assert.equal(hasFullHostAccess("trusted"), true);
+	assert.equal(trustedModePhraseMatches(TRUSTED_MODE_PHRASE), true);
+	assert.equal(trustedModePhraseMatches("trust this session"), false);
+	assert.equal(trustedModePhraseMatches(` ${TRUSTED_MODE_PHRASE}`), false);
+	assert.equal(trustedModePhraseMatches(undefined), false);
+});
 
 test("finds workspace and sibling project roots", (context) => {
 	const root = mkdtempSync(join(tmpdir(), "pi-sandbox-policy-"));

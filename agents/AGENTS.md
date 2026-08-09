@@ -7,6 +7,7 @@ Do not add comments to code unless I explicitly ask for them. Write self-explana
 Load `capture-knowledge` only when I explicitly ask to preserve personal knowledge for later or request a knowledge sweep. Generic mentions of notes, findings, documentation, patterns, workflows, or decisions do not authorize a write. Never persist task discoveries automatically or put personal knowledge in implementation repos unless I explicitly ask.
 Never use reasoning below medium for coding agents or delegated workers.
 Never push to any remote or force-push any ref unless I explicitly request that specific push. Requests to commit, finish, ship, validate, or open a PR do not authorize pushing.
+Trusted sandbox mode grants technical access only. Request it only after I explicitly ask for full-host access, keep it session-scoped, and never treat it as authorization to push, deploy, publish, delete, spend, expose secrets, or perform another consequential action.
 Never delete files or directories in bulk unless I explicitly request deletion of that exact scope. Ask first otherwise; a general cleanup request is insufficient.
 
 ## Response style — always on

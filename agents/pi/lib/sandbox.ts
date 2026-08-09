@@ -1,6 +1,18 @@
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
+export type SandboxMode = "strict" | "trusted";
+
+export const TRUSTED_MODE_PHRASE = "TRUST THIS SESSION";
+
+export function hasFullHostAccess(mode: SandboxMode): boolean {
+	return mode === "trusted";
+}
+
+export function trustedModePhraseMatches(value: string | undefined): boolean {
+	return value === TRUSTED_MODE_PHRASE;
+}
+
 export function canonical(path: string): string {
 	let cursor = resolve(path);
 	const tail: string[] = [];

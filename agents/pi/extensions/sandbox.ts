@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import {
 	type BashOperations,
 	createBashTool,
+	createLocalBashOperations,
 	type ExtensionAPI,
 	type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
@@ -16,9 +17,13 @@ import {
 	credentialEnvironmentKeys,
 	deniedWritePath,
 	expandPath,
+	hasFullHostAccess,
 	projectRootFor,
 	protectedPath,
 	protectedRoots,
+	type SandboxMode,
+	TRUSTED_MODE_PHRASE,
+	trustedModePhraseMatches,
 	within,
 	workspaceRoot,
 } from "../lib/sandbox.ts";
@@ -104,9 +109,13 @@ function terminate(child: ReturnType<typeof spawn>): void {
 function createSandboxedBashOperations(
 	manager: SandboxManager,
 	directories: SandboxDirectories,
+	fullHostAccess: () => boolean,
 ): BashOperations {
+	const local = createLocalBashOperations();
 	return {
 		async exec(command, cwd, { onData, signal, timeout, env }) {
+			if (fullHostAccess())
+				return local.exec(command, cwd, { onData, signal, timeout, env });
 			if (!existsSync(cwd))
 				throw new Error(`Working directory does not exist: ${cwd}`);
 			const wrapped = await manager.wrapWithSandbox(
@@ -171,6 +180,7 @@ export default async function sandbox(pi: ExtensionAPI) {
 	const pending = new Map<string, Promise<boolean>>();
 	let initialized = false;
 	let currentRoot = workspaceRoot(cwd);
+	let mode: SandboxMode = "strict";
 
 	const config = (): RuntimeConfig => ({
 		network: { deniedDomains: [] },
@@ -194,8 +204,35 @@ export default async function sandbox(pi: ExtensionAPI) {
 	const setStatus = (ctx: ExtensionContext) => {
 		ctx.ui.setStatus(
 			"sandbox",
-			`Sandbox: ${writable.size} writable project${writable.size === 1 ? "" : "s"}`,
+			hasFullHostAccess(mode)
+				? "Sandbox: TRUSTED · full host access"
+				: `Sandbox: ${writable.size} writable project${writable.size === 1 ? "" : "s"}`,
 		);
+	};
+
+	const setMode = (next: SandboxMode, ctx: ExtensionContext) => {
+		mode = next;
+		setStatus(ctx);
+	};
+
+	const requestTrustedMode = async (ctx: ExtensionContext) => {
+		if (hasFullHostAccess(mode)) return { granted: true };
+		if (!ctx.hasUI)
+			return { granted: false, reason: "Interactive approval unavailable" };
+		const approved = await ctx.ui.confirm(
+			"Enable trusted sandbox mode?",
+			"This gives this Pi session unsandboxed shell and file access, including credentials, agent sockets, and home configuration. Existing authorization rules still apply.",
+		);
+		if (!approved)
+			return { granted: false, reason: "Trusted mode denied by user" };
+		const phrase = await ctx.ui.input(
+			"Confirm full host access",
+			`Type ${TRUSTED_MODE_PHRASE} exactly`,
+		);
+		if (!trustedModePhraseMatches(phrase))
+			return { granted: false, reason: "Confirmation phrase did not match" };
+		setMode("trusted", ctx);
+		return { granted: true };
 	};
 
 	const addGrant = (root: string, ctx: ExtensionContext) => {
@@ -243,11 +280,13 @@ export default async function sandbox(pi: ExtensionAPI) {
 		return { granted: true, root };
 	};
 
-	const operations = createSandboxedBashOperations(manager, directories);
+	const operations = createSandboxedBashOperations(manager, directories, () =>
+		hasFullHostAccess(mode),
+	);
 	const bash = createBashTool(cwd, { operations });
 	pi.registerTool({
 		...bash,
-		label: "bash (sandboxed)",
+		label: "bash (sandbox-controlled)",
 		async execute(id, params, signal, onUpdate) {
 			if (!initialized) throw new Error("Sandbox unavailable");
 			return bash.execute(id, params, signal, onUpdate);
@@ -262,6 +301,7 @@ export default async function sandbox(pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		if (initialized) await manager.reset();
 		initialized = false;
+		mode = "strict";
 		writable.clear();
 		currentRoot = workspaceRoot(ctx.cwd);
 		writable.add(currentRoot);
@@ -271,6 +311,7 @@ export default async function sandbox(pi: ExtensionAPI) {
 	});
 
 	pi.on("session_shutdown", async () => {
+		mode = "strict";
 		if (!initialized) return;
 		initialized = false;
 		await manager.reset();
@@ -281,6 +322,7 @@ export default async function sandbox(pi: ExtensionAPI) {
 			!["read", "write", "edit", "grep", "find", "ls"].includes(event.toolName)
 		)
 			return undefined;
+		if (hasFullHostAccess(mode)) return undefined;
 		const input = event.input as { path?: unknown };
 		const rawPath = typeof input.path === "string" ? input.path : ".";
 		const target = canonical(expandPath(rawPath, ctx.cwd));
@@ -291,6 +333,45 @@ export default async function sandbox(pi: ExtensionAPI) {
 		if (deniedReason) return { block: true, reason: deniedReason };
 		const grant = await requestGrant(rawPath, ctx, true);
 		return grant.granted ? undefined : { block: true, reason: grant.reason };
+	});
+
+	pi.registerTool({
+		name: "sandbox_mode",
+		label: "Sandbox Mode",
+		description:
+			"Request trusted full-host access for this Pi session or return immediately to strict mode. Trusted mode always requires direct interactive confirmation.",
+		promptSnippet: "Request or revoke trusted full-host access",
+		promptGuidelines: [
+			"Use sandbox_mode only after the user explicitly asks to enable or disable full-host access.",
+			"Never infer trusted-mode permission from task wording, and never treat technical access as authorization to push, deploy, delete, publish, or expose secrets.",
+		],
+		parameters: Type.Object({
+			mode: Type.String({ description: "Either trusted or strict" }),
+		}),
+		executionMode: "sequential",
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			if (params.mode === "strict") {
+				setMode("strict", ctx);
+				return {
+					content: [{ type: "text", text: "Strict sandbox mode enabled" }],
+					details: { mode },
+				};
+			}
+			if (params.mode !== "trusted")
+				throw new Error("mode must be trusted or strict");
+			const grant = await requestTrustedMode(ctx);
+			return {
+				content: [
+					{
+						type: "text",
+						text: grant.granted
+							? "Trusted full-host access enabled for this session"
+							: (grant.reason ?? "Trusted mode denied"),
+					},
+				],
+				details: { mode, ...grant },
+			};
+		},
 	});
 
 	pi.registerTool({
@@ -322,22 +403,41 @@ export default async function sandbox(pi: ExtensionAPI) {
 
 	pi.registerCommand("sandbox", {
 		description:
-			"Show or change session write grants: /sandbox [allow|revoke] <project>",
+			"Show mode or change session access: /sandbox [trusted|strict|allow|revoke] [project]",
 		handler: async (args, ctx) => {
 			const [action, ...rest] = args.trim().split(/\s+/);
 			if (!action) {
 				ctx.ui.notify(
 					[
-						"Writable this session:",
+						`Mode: ${mode}`,
+						"Writable in strict mode:",
 						...[...writable].map((path) => `  ${path}`),
 					].join("\n"),
-					"info",
+					hasFullHostAccess(mode) ? "warning" : "info",
 				);
+				return;
+			}
+			if (action === "trusted") {
+				const grant = await requestTrustedMode(ctx);
+				ctx.ui.notify(
+					grant.granted
+						? "Trusted full-host access enabled for this session"
+						: (grant.reason ?? "Trusted mode denied"),
+					grant.granted ? "warning" : "error",
+				);
+				return;
+			}
+			if (action === "strict") {
+				setMode("strict", ctx);
+				ctx.ui.notify("Strict sandbox mode enabled", "info");
 				return;
 			}
 			const rawPath = rest.join(" ");
 			if (!rawPath || !["allow", "revoke"].includes(action)) {
-				ctx.ui.notify("Usage: /sandbox [allow|revoke] <project>", "warning");
+				ctx.ui.notify(
+					"Usage: /sandbox [trusted|strict|allow|revoke] [project]",
+					"warning",
+				);
 				return;
 			}
 			if (action === "allow") {
