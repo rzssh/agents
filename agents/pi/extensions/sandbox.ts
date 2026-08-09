@@ -18,6 +18,7 @@ import {
 	deniedWritePath,
 	expandPath,
 	hasFullHostAccess,
+	initialSandboxMode,
 	projectRootFor,
 	protectedPath,
 	protectedRoots,
@@ -180,7 +181,8 @@ export default async function sandbox(pi: ExtensionAPI) {
 	const pending = new Map<string, Promise<boolean>>();
 	let initialized = false;
 	let currentRoot = workspaceRoot(cwd);
-	let mode: SandboxMode = "strict";
+	const startupMode = initialSandboxMode();
+	let mode: SandboxMode = startupMode;
 
 	const config = (): RuntimeConfig => ({
 		network: { deniedDomains: [] },
@@ -301,7 +303,7 @@ export default async function sandbox(pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		if (initialized) await manager.reset();
 		initialized = false;
-		mode = "strict";
+		mode = startupMode;
 		writable.clear();
 		currentRoot = workspaceRoot(ctx.cwd);
 		writable.add(currentRoot);

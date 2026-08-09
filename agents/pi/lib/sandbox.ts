@@ -5,6 +5,12 @@ export type SandboxMode = "strict" | "trusted";
 
 export const TRUSTED_MODE_PHRASE = "TRUST THIS SESSION";
 
+export function initialSandboxMode(
+	env: NodeJS.ProcessEnv = process.env,
+): SandboxMode {
+	return env.PI_SANDBOX_START_MODE === "trusted" ? "trusted" : "strict";
+}
+
 export function hasFullHostAccess(mode: SandboxMode): boolean {
 	return mode === "trusted";
 }

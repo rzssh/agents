@@ -8,6 +8,7 @@ import {
 	credentialEnvironmentKeys,
 	deniedWritePath,
 	hasFullHostAccess,
+	initialSandboxMode,
 	projectRootFor,
 	protectedPath,
 	protectedRoots,
@@ -16,7 +17,16 @@ import {
 	workspaceRoot,
 } from "./sandbox.ts";
 
-test("trusted mode requires an exact session phrase", () => {
+test("trusted mode requires an exact session phrase or launch policy", () => {
+	assert.equal(initialSandboxMode({}), "strict");
+	assert.equal(
+		initialSandboxMode({ PI_SANDBOX_START_MODE: "trusted" }),
+		"trusted",
+	);
+	assert.equal(
+		initialSandboxMode({ PI_SANDBOX_START_MODE: "other" }),
+		"strict",
+	);
 	assert.equal(hasFullHostAccess("strict"), false);
 	assert.equal(hasFullHostAccess("trusted"), true);
 	assert.equal(trustedModePhraseMatches(TRUSTED_MODE_PHRASE), true);
