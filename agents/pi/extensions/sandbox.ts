@@ -386,7 +386,11 @@ export default async function sandbox(pi: ExtensionAPI) {
 		parameters: Type.Object({ path: Type.String({ minLength: 1 }) }),
 		executionMode: "sequential",
 		async execute(_id, params, _signal, _onUpdate, ctx) {
-			const grant = await requestGrant(params.path, ctx, true);
+			const grant = await requestGrant(
+				params.path,
+				ctx,
+				!hasFullHostAccess(mode),
+			);
 			return {
 				content: [
 					{
