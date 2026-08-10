@@ -4,18 +4,17 @@ Snapshot: 2026-08-10
 
 ## Outcome
 
-Install nothing from the Reddit list now.
+Initial audit installed nothing from the Reddit list. A later 41.5 MiB session established a measured compaction defect: Pi summarized 373,399 tokens through a large text-generation call and could remain above its threshold during long tool loops. After source review and 20 passing upstream tests, `@ogulcancelik/pi-codex-compaction@0.1.3` was selected for a controlled Codex-only trial.
 
-Current setup already has narrower owners for orchestration, web access, browser control, validation, safety, task state, and communication. Adding overlapping extensions would create competing tools, duplicate state, more prompt surface, and harder failure diagnosis.
+Overlap is not itself a rejection reason. Each overlapping candidate should beat its current owner on reliability, safety, evidence quality, or operator cost. Most candidates below still lost that comparison because they duplicated state or mutation authority without a measured gain.
 
 Useful candidates remain conditional:
 
 1. Voice dictation when a package supports current Pi and a local Nix-managed backend. `@senad-d/micme` is attractive for reflective writing, but its documented Pi range is `>=0.80.7 <0.81.0`; current runtime is 0.84.1.
 2. DAP only when a real debugging task needs breakpoints that logs and tests cannot provide.
-3. Codex remote compaction only after native Pi 0.84.1 compaction shows a measured continuity or latency problem.
-4. FFF only after repository search is measurably slow. Current `rg`, `fd`, bounded tools, and indexed editor navigation are sufficient.
+3. FFF only after repository search is measurably slow. Current `rg`, `fd`, bounded tools, and indexed editor navigation are sufficient.
 
-The useful immediate upgrade was Pi itself from 0.82.1 to 0.84.1, not another extension layer.
+Pi was upgraded from 0.82.1 to 0.84.1 before adding the narrowly justified compaction extension.
 
 ## Existing owners
 
@@ -47,7 +46,7 @@ The useful immediate upgrade was Pi itself from 0.82.1 to 0.84.1, not another ex
 | [`@ogulcancelik/pi-ghostty-theme-sync`](https://github.com/ogulcancelik/pi-extensions) | Ghostty color synchronization | Defer | Harmless cosmetic option, but no workflow benefit. Trial only after a visual regression check. |
 | [`@mobrienv/pi-tidy-tools`](https://github.com/mikeyobrien/pi-tidy-tools) | Compact tool rendering | Reject | Current tool API already truncates and pages output deterministically. |
 | [`pi-next-cue`](https://github.com/ouzhenkun/pi-next-cue) | Predicts next user prompt | Reject | Adds inference, UI noise, and accidental-send risk; user intent should not be guessed. |
-| [`@ogulcancelik/pi-codex-compaction`](https://github.com/ogulcancelik/pi-extensions) | Native Codex remote compaction | Defer | Compatible with current Pi, but native 0.84.1 compaction should be measured first. |
+| [`@ogulcancelik/pi-codex-compaction`](https://github.com/ogulcancelik/pi-extensions/tree/main/packages/pi-codex-compaction) | Native Codex remote compaction | Controlled trial | Measured native text compaction was slow on the 41.5 MiB session. Version 0.1.3 uses Pi's real compaction lifecycle, stops long tool loops at 90%, is fail-closed, has no runtime dependencies, and passed all 20 upstream tests locally. Its opaque checkpoints remain Codex-model-specific. |
 | [`pi-eta`](https://github.com/alasano/house-of-pi) | Calibrated completion estimates | Reject | Estimates do not unblock work and become misleading during parallel agents or external builds. |
 | `restart` custom extension | Fresh-session handoff around 80% context | Reject | Pi compaction/resume and FirstMate durable state already cover handoff. No stable public package was identified from the post. |
 | `worksheet-loop` custom extension | Shared Markdown task loop | Reject | Duplicates FirstMate/tasks-axi and risks two task authorities. No stable public package was identified from the post. |
@@ -86,7 +85,7 @@ The useful immediate upgrade was Pi itself from 0.82.1 to 0.84.1, not another ex
 
 - Dictation: package declares Pi 0.84 compatibility and passes a one-run local privacy/latency test.
 - DAP: one real bug cannot be efficiently diagnosed through tests, traces, or a core dump.
-- Codex compaction: measured native compaction latency or continuity loss recurs.
+- Codex compaction: keep only if a fresh-session trial produces a valid native checkpoint, resumes cleanly, and materially improves latency without blocking normal Codex use.
 - FFF: timed `rg`/`fd` discovery becomes material in large repositories.
 - pi-lens: repeated defects would have been prevented by immediate LSP feedback and existing checks are too slow.
 
