@@ -18,7 +18,12 @@ let
     hermes
     openspec
     treehouse
+    tuicr
     ;
+  herdrSkill = pkgs.runCommand "herdr-skill" { } ''
+    mkdir -p "$out"
+    ${herdr}/bin/herdr --skill > "$out/SKILL.md"
+  '';
   cargoHome = "${config.home.homeDirectory}/.cargo";
   chromeDevtoolsMcpPath = "${localPkgs.chrome-devtools-mcp}/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
   npmCache = "${config.home.homeDirectory}/.npm";
@@ -77,17 +82,6 @@ let
       (credentialArgs client)
       (homeArgs client)
     ];
-  releaseAgent = name: ''
-    release_agent() {
-      status=$?
-      trap - EXIT
-      if [ "''${HERDR_ENV:-}" = 1 ] && [ -n "''${HERDR_PANE_ID:-}" ] && [ -n "''${HERDR_SOCKET_PATH:-}" ]; then
-        ${herdr}/bin/herdr pane release-agent "''${HERDR_PANE_ID}" --source "herdr:${name}" --agent "${name}" --seq "$(${pkgs.coreutils}/bin/date +%s%N)" >/dev/null 2>&1 || true
-      fi
-      exit "$status"
-    }
-    trap release_agent EXIT
-  '';
   wrappers = lib.mapAttrs (
     name: client:
     pkgs.writeShellScript "ai-${name}" (
@@ -131,8 +125,7 @@ let
               break
             fi
           done
-          ${releaseAgent name}
-          ${aiRun} ${clientArgs client} "$profile" -- ${client.executable} "''${permission_args[@]}" "$@"
+          exec ${aiRun} ${clientArgs client} "$profile" -- ${client.executable} "''${permission_args[@]}" "$@"
         ''
       else if name == "opencode" then
         ''
@@ -189,6 +182,7 @@ in
     hermes
     herdr
     treehouse
+    tuicr
   ];
 
   home.file = wrapperFiles // {
@@ -210,13 +204,19 @@ in
     ".agents/skills/capture-knowledge".source = link "agents/skills/capture-knowledge";
     ".agents/skills/delegate-work".source = link "agents/skills/delegate-work";
     ".agents/skills/herdr-agent-comms".source = link "agents/skills/herdr-agent-comms";
+    ".agents/skills/herdr/SKILL.md" = {
+      source = "${herdrSkill}/SKILL.md";
+      force = true;
+    };
     ".agents/skills/teach-code".source = link "agents/skills/teach-code";
+    ".agents/skills/tuicr".source = "${inputs.tuicr}/skills/tuicr";
     ".agents/skills/use-browser".source = link "agents/skills/use-browser";
     ".agents/skills/web-research".source = link "agents/skills/web-research";
     ".claude/skills/delegate-work".source = link "agents/skills/delegate-work";
     ".claude/skills/herdr-agent-comms".source = link "agents/skills/herdr-agent-comms";
     ".claude/skills/capture-knowledge".source = link "agents/skills/capture-knowledge";
     ".claude/skills/teach-code".source = link "agents/skills/teach-code";
+    ".claude/skills/tuicr".source = "${inputs.tuicr}/skills/tuicr";
     ".claude/skills/use-browser".source = link "agents/skills/use-browser";
     ".claude/skills/web-research".source = link "agents/skills/web-research";
   };
@@ -308,6 +308,7 @@ in
         managed_link "${source}/agents/skills/delegate-work" "$claude/skills/delegate-work"
         managed_link "${source}/agents/skills/herdr-agent-comms" "$claude/skills/herdr-agent-comms"
         managed_link "${source}/agents/skills/teach-code" "$claude/skills/teach-code"
+        managed_link "${inputs.tuicr}/skills/tuicr" "$claude/skills/tuicr"
         managed_link "${source}/agents/skills/use-browser" "$claude/skills/use-browser"
         managed_link "${source}/agents/skills/web-research" "$claude/skills/web-research"
         managed_link "${source}/agents/AGENTS.md" "$codex/AGENTS.md"

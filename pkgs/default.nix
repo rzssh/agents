@@ -68,4 +68,5 @@ in
     pnpmHash = "sha256-vZcUSa35SvRJoaeuSUuDpv54FJRtP1fxv+6+tR9euR0=";
   };
   treehouse = inputs.treehouse.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  tuicr = inputs.tuicr.packages.${pkgs.stdenv.hostPlatform.system}.default;
 }

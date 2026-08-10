@@ -10,7 +10,7 @@
     };
 
     herdr = {
-      url = "github:ogulcancelik/herdr/v0.7.5";
+      url = "github:herdrdev/herdr/v0.8.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -28,6 +28,11 @@
 
     treehouse = {
       url = "github:kunchenguid/treehouse/v2.0.1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    tuicr = {
+      url = "github:agavra/tuicr/v0.21.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
