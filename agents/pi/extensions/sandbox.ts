@@ -13,6 +13,7 @@ import {
 import { Type } from "typebox";
 import {
 	canonical,
+	classifySessionTrigger,
 	configuredCachePaths,
 	credentialEnvironmentKeys,
 	deniedWritePath,
@@ -23,8 +24,6 @@ import {
 	protectedPath,
 	protectedRoots,
 	type SandboxMode,
-	TRUSTED_MODE_PHRASE,
-	trustedModePhraseMatches,
 	within,
 	workspaceRoot,
 } from "../lib/sandbox.ts";
@@ -227,12 +226,6 @@ export default async function sandbox(pi: ExtensionAPI) {
 		);
 		if (!approved)
 			return { granted: false, reason: "Trusted mode denied by user" };
-		const phrase = await ctx.ui.input(
-			"Confirm full host access",
-			`Type ${TRUSTED_MODE_PHRASE} exactly`,
-		);
-		if (!trustedModePhraseMatches(phrase))
-			return { granted: false, reason: "Confirmation phrase did not match" };
 		setMode("trusted", ctx);
 		return { granted: true };
 	};
@@ -298,6 +291,25 @@ export default async function sandbox(pi: ExtensionAPI) {
 	pi.on("user_bash", () => {
 		if (!initialized) throw new Error("Sandbox unavailable");
 		return { operations };
+	});
+
+	pi.on("input", async (event, ctx) => {
+		if (event.source !== "interactive") return { action: "continue" };
+		const trigger = classifySessionTrigger(event.text);
+		if (!trigger) return { action: "continue" };
+		if (trigger === "untrust") {
+			setMode("strict", ctx);
+			ctx.ui.notify("Strict sandbox mode enabled", "info");
+			return { action: "handled" };
+		}
+		const grant = await requestTrustedMode(ctx);
+		ctx.ui.notify(
+			grant.granted
+				? "Trusted full-host access enabled for this session"
+				: (grant.reason ?? "Trusted mode denied"),
+			grant.granted ? "warning" : "error",
+		);
+		return { action: "handled" };
 	});
 
 	pi.on("session_start", async (_event, ctx) => {
@@ -473,6 +485,28 @@ export default async function sandbox(pi: ExtensionAPI) {
 			if (initialized) manager.updateConfig(config());
 			setStatus(ctx);
 			ctx.ui.notify(`Write access revoked: ${root}`, "info");
+		},
+	});
+
+	pi.registerCommand("trust", {
+		description:
+			"Enable trusted full-host access for this session after interactive confirmation",
+		handler: async (_args, ctx) => {
+			const grant = await requestTrustedMode(ctx);
+			ctx.ui.notify(
+				grant.granted
+					? "Trusted full-host access enabled for this session"
+					: (grant.reason ?? "Trusted mode denied"),
+				grant.granted ? "warning" : "error",
+			);
+		},
+	});
+
+	pi.registerCommand("untrust", {
+		description: "Return to strict sandbox mode immediately",
+		handler: async (_args, ctx) => {
+			setMode("strict", ctx);
+			ctx.ui.notify("Strict sandbox mode enabled", "info");
 		},
 	});
 }

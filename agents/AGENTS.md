@@ -10,6 +10,10 @@ Never push to any remote or force-push any ref unless I explicitly request that 
 Trusted sandbox mode grants technical access only. Request it only after I explicitly ask for full-host access, keep it session-scoped, and never treat it as authorization to push, deploy, publish, delete, spend, expose secrets, or perform another consequential action.
 Never delete files or directories in bulk unless I explicitly request deletion of that exact scope. Ask first otherwise; a general cleanup request is insufficient.
 
+## Commit messages
+
+Use caveman-commit: subject only, 3-8 words, <=50 characters. Body only for breaking/security/migration/revert/non-obvious why. Never test dumps or AI/process prose.
+
 ## Response style — always on
 
 Two always-on modes. Caveman governs how you TALK. Ponytail governs what you BUILD. Both active every response. Off only when I say "normal mode", "stop caveman", or "stop ponytail".

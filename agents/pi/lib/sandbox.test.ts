@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
+	classifySessionTrigger,
 	configuredCachePaths,
 	credentialEnvironmentKeys,
 	deniedWritePath,
@@ -17,7 +18,7 @@ import {
 	workspaceRoot,
 } from "./sandbox.ts";
 
-test("trusted mode requires an exact session phrase or launch policy", () => {
+test("launch policy selects mode and legacy phrase matching stays exact", () => {
 	assert.equal(initialSandboxMode({}), "strict");
 	assert.equal(
 		initialSandboxMode({ PI_SANDBOX_START_MODE: "trusted" }),
@@ -30,9 +31,26 @@ test("trusted mode requires an exact session phrase or launch policy", () => {
 	assert.equal(hasFullHostAccess("strict"), false);
 	assert.equal(hasFullHostAccess("trusted"), true);
 	assert.equal(trustedModePhraseMatches(TRUSTED_MODE_PHRASE), true);
-	assert.equal(trustedModePhraseMatches("trust this session"), false);
+	assert.equal(trustedModePhraseMatches("trust"), false);
+	assert.equal(trustedModePhraseMatches("TRUST THIS SESSION"), false);
 	assert.equal(trustedModePhraseMatches(` ${TRUSTED_MODE_PHRASE}`), false);
+	assert.equal(trustedModePhraseMatches(`${TRUSTED_MODE_PHRASE} `), false);
 	assert.equal(trustedModePhraseMatches(undefined), false);
+});
+
+test("classifies exact standalone session triggers", () => {
+	assert.equal(classifySessionTrigger("TRUST"), "trust");
+	assert.equal(classifySessionTrigger("UNTRUST"), "untrust");
+	assert.equal(classifySessionTrigger("trust"), undefined);
+	assert.equal(classifySessionTrigger("untrust"), undefined);
+	assert.equal(classifySessionTrigger("Trust"), undefined);
+	assert.equal(classifySessionTrigger("TRUST "), undefined);
+	assert.equal(classifySessionTrigger(" TRUST"), undefined);
+	assert.equal(classifySessionTrigger("TRUST THIS SESSION"), undefined);
+	assert.equal(classifySessionTrigger("please TRUST"), undefined);
+	assert.equal(classifySessionTrigger("UNTRUST ME"), undefined);
+	assert.equal(classifySessionTrigger(""), undefined);
+	assert.equal(classifySessionTrigger(undefined), undefined);
 });
 
 test("finds workspace and sibling project roots", (context) => {

@@ -3,7 +3,17 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 
 export type SandboxMode = "strict" | "trusted";
 
-export const TRUSTED_MODE_PHRASE = "TRUST THIS SESSION";
+export const TRUSTED_MODE_PHRASE = "TRUST";
+
+export type SessionTrigger = "trust" | "untrust";
+
+export function classifySessionTrigger(
+	value: string | undefined,
+): SessionTrigger | undefined {
+	if (value === TRUSTED_MODE_PHRASE) return "trust";
+	if (value === "UNTRUST") return "untrust";
+	return undefined;
+}
 
 export function initialSandboxMode(
 	env: NodeJS.ProcessEnv = process.env,
