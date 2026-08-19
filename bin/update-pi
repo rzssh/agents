@@ -37,6 +37,9 @@ dependency_integrity() {
 	local dependency="$1"
 	local spec
 	spec="$(npm view "$package@$latest" "dependencies.$dependency")"
+	if [[ -z "$spec" ]]; then
+		spec="$latest"
+	fi
 	npm view "$dependency@$spec" dist.integrity
 }
 
@@ -58,6 +61,9 @@ OLD_VERSION="$current" NEW_VERSION="$latest" perl -0pi -e '
 
 replace_integrity "@earendil-works/pi-agent-core" "$(dependency_integrity "@earendil-works/pi-agent-core")"
 replace_integrity "@earendil-works/pi-ai" "$(dependency_integrity "@earendil-works/pi-ai")"
+replace_integrity "@earendil-works/pi-client" "$(dependency_integrity "@earendil-works/pi-client")"
+replace_integrity "@earendil-works/pi-protocol" "$(dependency_integrity "@earendil-works/pi-protocol")"
+replace_integrity "@earendil-works/pi-telemetry" "$(dependency_integrity "@earendil-works/pi-telemetry")"
 replace_integrity "@earendil-works/pi-tui" "$(dependency_integrity "@earendil-works/pi-tui")"
 
 perl -0pi -e '

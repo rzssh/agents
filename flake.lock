@@ -210,13 +210,13 @@
       "flake": false,
       "locked": {
         "lastModified": 499162500,
-        "narHash": "sha256-yhKp8UtDAj+2C+iDGZOnQVcCMOey7D0Oh0ROSAHAAls=",
+        "narHash": "sha256-9dv6prGh2inmg4pEFkC8OsU/Eh18L3wCvcUde5rOMdc=",
         "type": "tarball",
-        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.1.tgz"
+        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.2.tgz"
       },
       "original": {
         "type": "tarball",
-        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.1.tgz"
+        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.2.tgz"
       }
     },
     "pyproject-build-systems": {
