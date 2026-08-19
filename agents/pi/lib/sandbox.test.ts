@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
-	classifySessionTrigger,
 	configuredCachePaths,
 	credentialEnvironmentKeys,
 	deniedWritePath,
@@ -13,12 +12,12 @@ import {
 	projectRootFor,
 	protectedPath,
 	protectedRoots,
-	TRUSTED_MODE_PHRASE,
-	trustedModePhraseMatches,
+	sandboxGitExcludePatterns,
+	withSandboxGitExclude,
 	workspaceRoot,
 } from "./sandbox.ts";
 
-test("launch policy selects mode and legacy phrase matching stays exact", () => {
+test("launch policy selects sandbox mode", () => {
 	assert.equal(initialSandboxMode({}), "strict");
 	assert.equal(
 		initialSandboxMode({ PI_SANDBOX_START_MODE: "trusted" }),
@@ -30,27 +29,6 @@ test("launch policy selects mode and legacy phrase matching stays exact", () => 
 	);
 	assert.equal(hasFullHostAccess("strict"), false);
 	assert.equal(hasFullHostAccess("trusted"), true);
-	assert.equal(trustedModePhraseMatches(TRUSTED_MODE_PHRASE), true);
-	assert.equal(trustedModePhraseMatches("trust"), false);
-	assert.equal(trustedModePhraseMatches("TRUST THIS SESSION"), false);
-	assert.equal(trustedModePhraseMatches(` ${TRUSTED_MODE_PHRASE}`), false);
-	assert.equal(trustedModePhraseMatches(`${TRUSTED_MODE_PHRASE} `), false);
-	assert.equal(trustedModePhraseMatches(undefined), false);
-});
-
-test("classifies exact standalone session triggers", () => {
-	assert.equal(classifySessionTrigger("TRUST"), "trust");
-	assert.equal(classifySessionTrigger("UNTRUST"), "untrust");
-	assert.equal(classifySessionTrigger("trust"), undefined);
-	assert.equal(classifySessionTrigger("untrust"), undefined);
-	assert.equal(classifySessionTrigger("Trust"), undefined);
-	assert.equal(classifySessionTrigger("TRUST "), undefined);
-	assert.equal(classifySessionTrigger(" TRUST"), undefined);
-	assert.equal(classifySessionTrigger("TRUST THIS SESSION"), undefined);
-	assert.equal(classifySessionTrigger("please TRUST"), undefined);
-	assert.equal(classifySessionTrigger("UNTRUST ME"), undefined);
-	assert.equal(classifySessionTrigger(""), undefined);
-	assert.equal(classifySessionTrigger(undefined), undefined);
 });
 
 test("finds workspace and sibling project roots", (context) => {
@@ -105,6 +83,31 @@ test("protects credentials and executable configuration", () => {
 			"SSH_AUTH_SOCK",
 			"GPG_AGENT_INFO",
 		],
+	);
+});
+
+test("hides sandbox mount points from git status", () => {
+	const patterns = sandboxGitExcludePatterns("__pycache__/\n");
+	assert.match(patterns, /^__pycache__\//);
+	assert.match(patterns, /\*\*\/\.bashrc/);
+	assert.match(patterns, /\*\*\/\.claude\/commands/);
+	assert.match(patterns, /\*\*\/\.idea/);
+	assert.deepEqual(
+		withSandboxGitExclude(
+			{
+				GIT_CONFIG_COUNT: "1",
+				GIT_CONFIG_KEY_0: "safe.directory",
+				GIT_CONFIG_VALUE_0: "/work",
+			},
+			"/tmp/git-exclude",
+		),
+		{
+			GIT_CONFIG_COUNT: "2",
+			GIT_CONFIG_KEY_0: "safe.directory",
+			GIT_CONFIG_VALUE_0: "/work",
+			GIT_CONFIG_KEY_1: "core.excludesFile",
+			GIT_CONFIG_VALUE_1: "/tmp/git-exclude",
+		},
 	);
 });
 

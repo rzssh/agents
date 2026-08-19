@@ -3,16 +3,44 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 
 export type SandboxMode = "strict" | "trusted";
 
-export const TRUSTED_MODE_PHRASE = "TRUST";
+const executableConfigurationFiles = [
+	".gitconfig",
+	".gitmodules",
+	".bashrc",
+	".bash_profile",
+	".zshrc",
+	".zprofile",
+	".profile",
+	".ripgreprc",
+	".mcp.json",
+];
 
-export type SessionTrigger = "trust" | "untrust";
+const editorConfigurationDirectories = [".vscode", ".idea"];
+const agentConfigurationNames = ["commands", "agents"];
 
-export function classifySessionTrigger(
-	value: string | undefined,
-): SessionTrigger | undefined {
-	if (value === TRUSTED_MODE_PHRASE) return "trust";
-	if (value === "UNTRUST") return "untrust";
-	return undefined;
+export function sandboxGitExcludePatterns(existing = ""): string {
+	return [
+		existing.trimEnd(),
+		...executableConfigurationFiles.map((path) => `**/${path}`),
+		...editorConfigurationDirectories.map((path) => `**/${path}`),
+		...agentConfigurationNames.map((name) => `**/.claude/${name}`),
+	]
+		.filter(Boolean)
+		.join("\n");
+}
+
+export function withSandboxGitExclude(
+	env: NodeJS.ProcessEnv,
+	path: string,
+): NodeJS.ProcessEnv {
+	const configuredCount = env.GIT_CONFIG_COUNT ?? "0";
+	const count = /^\d+$/.test(configuredCount) ? Number(configuredCount) : 0;
+	return {
+		...env,
+		GIT_CONFIG_COUNT: String(count + 1),
+		[`GIT_CONFIG_KEY_${count}`]: "core.excludesFile",
+		[`GIT_CONFIG_VALUE_${count}`]: path,
+	};
 }
 
 export function initialSandboxMode(
@@ -23,10 +51,6 @@ export function initialSandboxMode(
 
 export function hasFullHostAccess(mode: SandboxMode): boolean {
 	return mode === "trusted";
-}
-
-export function trustedModePhraseMatches(value: string | undefined): boolean {
-	return value === TRUSTED_MODE_PHRASE;
 }
 
 export function canonical(path: string): string {
@@ -169,24 +193,11 @@ export function protectedPath(
 export function deniedWritePath(path: string): string | undefined {
 	const parts = path.split(sep).filter(Boolean);
 	const leaf = parts.at(-1);
-	if (
-		leaf &&
-		[
-			".gitconfig",
-			".gitmodules",
-			".bashrc",
-			".bash_profile",
-			".zshrc",
-			".zprofile",
-			".profile",
-			".ripgreprc",
-			".mcp.json",
-		].includes(leaf)
-	) {
+	if (leaf && executableConfigurationFiles.includes(leaf)) {
 		return `Protected executable configuration: ${path}`;
 	}
 	for (let index = 0; index < parts.length; index += 1) {
-		if ([".vscode", ".idea"].includes(parts[index]))
+		if (editorConfigurationDirectories.includes(parts[index]))
 			return `Protected editor configuration: ${path}`;
 		if (
 			parts[index] === ".git" &&
@@ -196,7 +207,7 @@ export function deniedWritePath(path: string): string | undefined {
 		}
 		if (
 			parts[index] === ".claude" &&
-			["commands", "agents"].includes(parts[index + 1])
+			agentConfigurationNames.includes(parts[index + 1])
 		) {
 			return `Protected agent configuration: ${path}`;
 		}

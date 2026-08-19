@@ -1,5 +1,12 @@
-import { spawn } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import {
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -13,7 +20,6 @@ import {
 import { Type } from "typebox";
 import {
 	canonical,
-	classifySessionTrigger,
 	configuredCachePaths,
 	credentialEnvironmentKeys,
 	deniedWritePath,
@@ -24,7 +30,9 @@ import {
 	protectedPath,
 	protectedRoots,
 	type SandboxMode,
+	sandboxGitExcludePatterns,
 	within,
+	withSandboxGitExclude,
 	workspaceRoot,
 } from "../lib/sandbox.ts";
 
@@ -61,12 +69,28 @@ interface SandboxDirectories {
 	root: string;
 	runtime: string;
 	temporary: string;
+	gitExclude: string;
 }
 
 function requiredEnvironment(name: string): string {
 	const value = process.env[name];
 	if (!value) throw new Error(`${name} is not configured`);
 	return value;
+}
+
+function globalGitExcludePatterns(): string {
+	const result = spawnSync(
+		"git",
+		["config", "--global", "--path", "--get", "core.excludesFile"],
+		{ encoding: "utf8", env: process.env },
+	);
+	const fallback = join(
+		process.env.XDG_CONFIG_HOME ?? join(requiredEnvironment("HOME"), ".config"),
+		"git",
+		"ignore",
+	);
+	const path = result.status === 0 ? result.stdout.trim() : fallback;
+	return path && existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
 function sessionDirectories(): SandboxDirectories {
@@ -83,18 +107,27 @@ function sessionDirectories(): SandboxDirectories {
 	for (const path of [runtime, temporary]) {
 		mkdirSync(path, { mode: 0o700, recursive: true });
 	}
-	return { root, runtime, temporary };
+	const gitExclude = join(root, "git-exclude");
+	writeFileSync(
+		gitExclude,
+		sandboxGitExcludePatterns(globalGitExcludePatterns()),
+		{ mode: 0o600 },
+	);
+	return { root, runtime, temporary, gitExclude };
 }
 
 function sandboxEnvironment(
 	env: NodeJS.ProcessEnv,
 	directories: SandboxDirectories,
 ): NodeJS.ProcessEnv {
-	return {
-		...env,
-		TMPDIR: directories.temporary,
-		XDG_RUNTIME_DIR: directories.runtime,
-	};
+	return withSandboxGitExclude(
+		{
+			...env,
+			TMPDIR: directories.temporary,
+			XDG_RUNTIME_DIR: directories.runtime,
+		},
+		directories.gitExclude,
+	);
 }
 
 function terminate(child: ReturnType<typeof spawn>): void {
@@ -293,25 +326,6 @@ export default async function sandbox(pi: ExtensionAPI) {
 		return { operations };
 	});
 
-	pi.on("input", async (event, ctx) => {
-		if (event.source !== "interactive") return { action: "continue" };
-		const trigger = classifySessionTrigger(event.text);
-		if (!trigger) return { action: "continue" };
-		if (trigger === "untrust") {
-			setMode("strict", ctx);
-			ctx.ui.notify("Strict sandbox mode enabled", "info");
-			return { action: "handled" };
-		}
-		const grant = await requestTrustedMode(ctx);
-		ctx.ui.notify(
-			grant.granted
-				? "Trusted full-host access enabled for this session"
-				: (grant.reason ?? "Trusted mode denied"),
-			grant.granted ? "warning" : "error",
-		);
-		return { action: "handled" };
-	});
-
 	pi.on("session_start", async (_event, ctx) => {
 		if (initialized) await manager.reset();
 		initialized = false;
@@ -485,28 +499,6 @@ export default async function sandbox(pi: ExtensionAPI) {
 			if (initialized) manager.updateConfig(config());
 			setStatus(ctx);
 			ctx.ui.notify(`Write access revoked: ${root}`, "info");
-		},
-	});
-
-	pi.registerCommand("trust", {
-		description:
-			"Enable trusted full-host access for this session after interactive confirmation",
-		handler: async (_args, ctx) => {
-			const grant = await requestTrustedMode(ctx);
-			ctx.ui.notify(
-				grant.granted
-					? "Trusted full-host access enabled for this session"
-					: (grant.reason ?? "Trusted mode denied"),
-				grant.granted ? "warning" : "error",
-			);
-		},
-	});
-
-	pi.registerCommand("untrust", {
-		description: "Return to strict sandbox mode immediately",
-		handler: async (_args, ctx) => {
-			setMode("strict", ctx);
-			ctx.ui.notify("Strict sandbox mode enabled", "info");
 		},
 	});
 }
