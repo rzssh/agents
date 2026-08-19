@@ -290,6 +290,7 @@ in
         pi="$HOME/.pi/agent"
       else
         root="$HOME/.local/share/ai/profiles/$profile"
+        ${pkgs.coreutils}/bin/mkdir -p "$root"
         ${pkgs.coreutils}/bin/touch "$root/env"
         ${pkgs.coreutils}/bin/chmod 600 "$root/env"
         claude="$root/claude"
