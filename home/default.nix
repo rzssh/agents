@@ -290,6 +290,8 @@ in
         pi="$HOME/.pi/agent"
       else
         root="$HOME/.local/share/ai/profiles/$profile"
+        ${pkgs.coreutils}/bin/touch "$root/env"
+        ${pkgs.coreutils}/bin/chmod 600 "$root/env"
         claude="$root/claude"
         codex="$root/codex"
         gh="$root/gh"
@@ -318,12 +320,21 @@ in
         managed_link "${source}/agents/pi/lib/web.ts" "$pi/lib/web.ts"
         managed_link "${source}/agents/AGENTS.md" "$opencode/AGENTS.md"
         managed_link "${source}/agents/opencode/plugins/profile-protection.js" "$opencode/plugins/profile-protection.js"
+        managed_link "$HOME/.pi/agent/settings.json" "$pi/settings.json"
+        for shared in "$HOME"/.pi/agent/*; do
+          name="$(${pkgs.coreutils}/bin/basename "$shared")"
+          if [ "$name" != auth.json ] && [ "$name" != settings.json ] && [ ! -e "$pi/$name" ] && [ ! -L "$pi/$name" ]; then
+            managed_link "$shared" "$pi/$name"
+          fi
+        done
       fi
 
       ${pkgs.coreutils}/bin/rm -f "$pi/extensions/profile-protection.ts" "$pi/extensions/workspace-sandbox.ts"
 
       json_overlay "${source}/agents/claude/settings.json" "$claude/settings.json"
-      json_overlay "${source}/agents/pi/settings.json" "$pi/settings.json"
+      if [ "$profile" = personal ]; then
+        json_overlay "${source}/agents/pi/settings.json" "$pi/settings.json"
+      fi
       yaml_overlay "${source}/agents/hermes/config.yaml" "$hermes_home/config.yaml"
 
       ${aiRun} ${homeArgs clients.pi} "$profile" -- ${herdr}/bin/herdr integration install pi >/dev/null
