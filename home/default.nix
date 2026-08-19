@@ -210,6 +210,7 @@ in
     };
     ".agents/skills/teach-code".source = link "agents/skills/teach-code";
     ".agents/skills/tuicr".source = "${inputs.tuicr}/skills/tuicr";
+    ".agents/skills/tuicr-loop".source = link "agents/skills/tuicr-loop";
     ".agents/skills/use-browser".source = link "agents/skills/use-browser";
     ".agents/skills/web-research".source = link "agents/skills/web-research";
     ".claude/skills/delegate-work".source = link "agents/skills/delegate-work";
