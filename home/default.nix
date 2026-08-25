@@ -196,7 +196,12 @@ in
     ".claude/CLAUDE.md".source = link "agents/AGENTS.md";
     ".codex/AGENTS.md".source = link "agents/AGENTS.md";
     ".pi/agent/AGENTS.md".source = link "agents/AGENTS.md";
+    ".pi/agent/extensions/ask-user.ts".source = link "agents/pi/extensions/ask-user.ts";
+    ".pi/agent/extensions/computer-tools.ts".source = link "agents/pi/extensions/computer-tools.ts";
+    ".pi/agent/extensions/session-name.ts".source = link "agents/pi/extensions/session-name.ts";
     ".pi/agent/extensions/web.ts".source = link "agents/pi/extensions/web.ts";
+    ".pi/agent/lib/deferred-tools.ts".source = link "agents/pi/lib/deferred-tools.ts";
+    ".pi/agent/lib/session-name.ts".source = link "agents/pi/lib/session-name.ts";
     ".pi/agent/lib/web.ts".source = link "agents/pi/lib/web.ts";
     ".config/opencode/AGENTS.md".source = link "agents/AGENTS.md";
     ".config/opencode/plugins/profile-protection.js".source =
@@ -317,7 +322,12 @@ in
         managed_link "${source}/agents/skills/web-research" "$claude/skills/web-research"
         managed_link "${source}/agents/AGENTS.md" "$codex/AGENTS.md"
         managed_link "${source}/agents/AGENTS.md" "$pi/AGENTS.md"
+        managed_link "${source}/agents/pi/extensions/ask-user.ts" "$pi/extensions/ask-user.ts"
+        managed_link "${source}/agents/pi/extensions/computer-tools.ts" "$pi/extensions/computer-tools.ts"
+        managed_link "${source}/agents/pi/extensions/session-name.ts" "$pi/extensions/session-name.ts"
         managed_link "${source}/agents/pi/extensions/web.ts" "$pi/extensions/web.ts"
+        managed_link "${source}/agents/pi/lib/deferred-tools.ts" "$pi/lib/deferred-tools.ts"
+        managed_link "${source}/agents/pi/lib/session-name.ts" "$pi/lib/session-name.ts"
         managed_link "${source}/agents/pi/lib/web.ts" "$pi/lib/web.ts"
         managed_link "${source}/agents/AGENTS.md" "$opencode/AGENTS.md"
         managed_link "${source}/agents/opencode/plugins/profile-protection.js" "$opencode/plugins/profile-protection.js"
