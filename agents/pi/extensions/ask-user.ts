@@ -3,6 +3,11 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 const tool = "ask_user_question";
 
 export default function askUser(pi: ExtensionAPI) {
+	pi.events.on("rpiv:ask-user:blocked", (data) => {
+		const { active } = data as { active: boolean };
+		pi.events.emit("herdr:blocked", { active, label: "question" });
+	});
+
 	if (!process.env.FM_PI_HARNESS) return;
 
 	let registered = false;

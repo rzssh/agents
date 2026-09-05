@@ -3,6 +3,19 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 
 export type SandboxMode = "strict" | "trusted";
 
+export async function withHerdrBlocked<T>(
+	events: { emit(event: string, data: unknown): void },
+	label: string,
+	wait: () => Promise<T>,
+): Promise<T> {
+	events.emit("herdr:blocked", { active: true, label });
+	try {
+		return await wait();
+	} finally {
+		events.emit("herdr:blocked", { active: false, label });
+	}
+}
+
 const executableConfigurationFiles = [
 	".gitconfig",
 	".gitmodules",

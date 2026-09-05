@@ -2,6 +2,24 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import askUser from "../extensions/ask-user.ts";
 
+test("reports ask-user waits to Herdr", () => {
+	const handlers = new Map<string, (data: unknown) => void>();
+	let reported: unknown;
+	askUser({
+		events: {
+			on: (event: string, handler: (data: unknown) => void) => {
+				handlers.set(event, handler);
+			},
+			emit: (event: string, data: unknown) => {
+				if (event === "herdr:blocked") reported = data;
+			},
+		},
+	} as never);
+
+	handlers.get("rpiv:ask-user:blocked")?.({ active: true });
+	assert.deepEqual(reported, { active: true, label: "question" });
+});
+
 test("keeps ask-user hidden after package reconciliation in FirstMate workers", async () => {
 	const previous = process.env.FM_PI_HARNESS;
 	process.env.FM_PI_HARNESS = "pi";
@@ -11,6 +29,7 @@ test("keeps ask-user hidden after package reconciliation in FirstMate workers", 
 	>();
 	let active = ["read", "ask_user_question"];
 	const pi = {
+		events: { on: () => {}, emit: () => {} },
 		getActiveTools: () => active,
 		setActiveTools: (tools: string[]) => {
 			active = tools;

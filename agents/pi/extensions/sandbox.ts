@@ -31,6 +31,7 @@ import {
 	protectedRoots,
 	type SandboxMode,
 	sandboxGitExcludePatterns,
+	withHerdrBlocked,
 	within,
 	withSandboxGitExclude,
 	workspaceRoot,
@@ -295,9 +296,11 @@ export default async function sandbox(pi: ExtensionAPI) {
 			return { granted: false, reason: "Interactive approval unavailable" };
 		let approval = pending.get(root);
 		if (!approval) {
-			approval = ctx.ui.confirm(
-				"Sandbox write access",
-				`Allow writes to ${root} for this Pi session?`,
+			approval = withHerdrBlocked(pi.events, "sandbox access", () =>
+				ctx.ui.confirm(
+					"Sandbox write access",
+					`Allow writes to ${root} for this Pi session?`,
+				),
 			);
 			pending.set(root, approval);
 		}

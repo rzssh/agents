@@ -13,9 +13,28 @@ import {
 	protectedPath,
 	protectedRoots,
 	sandboxGitExcludePatterns,
+	withHerdrBlocked,
 	withSandboxGitExclude,
 	workspaceRoot,
 } from "./sandbox.ts";
+
+test("reports sandbox approval waits to Herdr", async () => {
+	const events: unknown[] = [];
+	await assert.rejects(
+		withHerdrBlocked(
+			{ emit: (event: string, data: unknown) => events.push([event, data]) },
+			"sandbox access",
+			async () => {
+				throw new Error("denied");
+			},
+		),
+		/denied/,
+	);
+	assert.deepEqual(events, [
+		["herdr:blocked", { active: true, label: "sandbox access" }],
+		["herdr:blocked", { active: false, label: "sandbox access" }],
+	]);
+});
 
 test("launch policy selects sandbox mode", () => {
 	assert.equal(initialSandboxMode({}), "strict");
