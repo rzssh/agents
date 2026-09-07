@@ -23,10 +23,6 @@ Trusted launchers may set `PI_SANDBOX_START_MODE=trusted` for unattended child s
 
 Trusted mode changes technical access, not authorization. Pushes, deployments, publication, deletion, spend, and secret disclosure still require their own explicit instruction.
 
-## Evaluations
-
-- [`docs/pi-extension-audit-2026-08-10.md`](docs/pi-extension-audit-2026-08-10.md): current extension-by-extension fit review and revisit triggers.
-
 ## Checks
 
 ```sh
