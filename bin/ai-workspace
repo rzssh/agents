@@ -32,6 +32,14 @@ profile_from_label() {
     return 1
 }
 
+base_from_label() {
+    if [[ $1 =~ $profile_suffix_re ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
 current_profile() {
     if [[ -n ${HERDR_WORKSPACE_ID:-} && $HERDR_WORKSPACE_ID =~ $workspace_re ]]; then
         local label
@@ -99,17 +107,7 @@ ensure_git_upstream() {
 }
 
 set_profile() {
-    local workspace_id=$1
-    local profile=$2
-    local cwd=$3
-    local label
-    local desired
-    label=$(workspace_label "$workspace_id")
-    desired="$(basename -- "$(workspace_path "$cwd")") | [$profile]"
-    if [[ $label != "$desired" ]]; then
-        clean_profile_environment herdr workspace rename "$workspace_id" "$desired" >/dev/null
-    fi
-    refresh_metadata "$workspace_id" "$cwd"
+    refresh_metadata "$1" "$3" "$2"
 }
 
 vcs_state() {
@@ -143,20 +141,33 @@ vcs_state() {
 refresh_metadata() {
     local workspace_id=$1
     local cwd=$2
+    local info
     local label
     local profile
     local desired
     local path
+    local previous_path
+    local managed_label
+    local base
     local state
-    label=$(workspace_label "$workspace_id")
-    profile=$(profile_from_label "$label" || printf '%s\n' "${AI_PROFILE:-${AI_DEFAULT_PROFILE:-personal}}")
+    info=$(workspace_info "$workspace_id")
+    label=$(jq -er '.result.workspace.label' <<< "$info")
+    profile=${3:-$(profile_from_label "$label" || printf '%s\n' "${AI_PROFILE:-${AI_DEFAULT_PROFILE:-personal}}")}
     path=$(workspace_path "$cwd")
-    desired="$(basename -- "$path") | [$profile]"
+    previous_path=$(jq -r '.result.workspace.tokens.workspace_path // ""' <<< "$info")
+    managed_label=$(jq -r '.result.workspace.tokens.ai_workspace_label // ""' <<< "$info")
+    base=$(basename -- "$path")
+    if [[ -n $managed_label && $label != "$managed_label" ]] ||
+        [[ -n $previous_path && $(base_from_label "${managed_label:-$label}") != "$(basename -- "$previous_path")" ]]; then
+        base=$(base_from_label "$label")
+    fi
+    desired="$base | [$profile]"
     if [[ $label != "$desired" ]]; then
         clean_profile_environment herdr workspace rename "$workspace_id" "$desired" >/dev/null
     fi
     ensure_git_upstream "$cwd"
-    local metadata=(--source ai-workspace --token "workspace_path=$path")
+    local metadata=(--source ai-workspace --token "workspace_path=$path" \
+        --token "ai_workspace_label=$desired" --clear-token ai_workspace_custom_base)
     if state=$(vcs_state "$cwd"); then
         metadata+=(--clear-token no_vcs)
         if [[ -n $state ]]; then
@@ -237,7 +248,9 @@ if [[ ${1:-} == --refresh-event ]]; then
     context=${HERDR_PLUGIN_CONTEXT_JSON:-}
     [[ -n $context ]] || exit 0
     cwd=$(jq -er '.focused_pane_cwd // .workspace_cwd // empty' \
-        <<< "$context" 2>/dev/null) || exit 0
+        <<< "$context" 2>/dev/null) ||
+        cwd=$(clean_profile_environment herdr pane list --workspace "$workspace_id" |
+            jq -er 'first(.result.panes[] | select(.focused) | .cwd // empty)') || exit 0
     [[ -d $cwd ]] || exit 0
     refresh_metadata "$workspace_id" "$(realpath -- "$cwd")"
     exit 0
