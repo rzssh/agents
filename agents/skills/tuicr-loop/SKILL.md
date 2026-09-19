@@ -1,6 +1,6 @@
 ---
 name: tuicr-loop
-description: "Crit-style blocking review loop with tuicr: Pi opens the TUI, the user comments inline, Pi addresses feedback and replies, repeating until approved. Use when the user says 'tuicr loop', 'review in tuicr and take over', or wants round-based review without crit's browser."
+description: "Blocking review loop with tuicr: Pi opens the TUI, the user comments inline, Pi addresses feedback and replies, repeating until approved. Use when the user says 'tuicr loop', 'review in tuicr and take over', or wants round-based review."
 ---
 
 # Pi-Driven tuicr Review Loop
@@ -72,7 +72,6 @@ yields zero unseen user comments, then tell the user the review is approved.
 
 - No reply threading or resolve state in the CLI — replies are plain comments
   anchored at the same spot.
-- The round boundary is the user pressing `q`, unlike crit's explicit
-  "Finish Review" click.
+- The round boundary is the user pressing `q`.
 - Session selection picks the repo's most recently updated local session; if
   the user had several TUIs open, confirm the slug before replying.

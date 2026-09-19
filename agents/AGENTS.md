@@ -9,6 +9,7 @@ Never use reasoning below medium for coding agents or delegated workers.
 Never push to any remote or force-push any ref unless I explicitly request that specific push. Requests to commit, finish, ship, validate, or open a PR do not authorize pushing.
 Trusted sandbox mode grants technical access only. Use `/sandbox trusted` and `/sandbox strict`; Pi reserves `/trust` for project-resource trust. Request full-host access only after I explicitly ask, keep it session-scoped, and never treat it as authorization to push, deploy, publish, delete, spend, expose secrets, or perform another consequential action.
 Never delete files or directories in bulk unless I explicitly request deletion of that exact scope. Ask first otherwise; a general cleanup request is insufficient.
+Never use computer-use, desktop-control, or rendered-browser tools unless I explicitly ask you to interact with a GUI or browser. Do not use them merely because shell or sandbox tools are unavailable.
 
 ## Subscription efficiency
 

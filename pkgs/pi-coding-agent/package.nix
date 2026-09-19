@@ -9,21 +9,20 @@
 
 buildNpmPackage {
   pname = "pi-coding-agent";
-  version = "0.84.2";
+  version = "0.85.1";
   inherit src;
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-LzeT2mpfceGxbjydta0d1MyptyFyS/5PK4t2J7l9/KI=";
+  npmDepsHash = "sha256-aNrpboCvJH9GOBiO0povbqbHuDwDLA+EeXgWysWeAj8=";
   makeCacheWritable = true;
 
   postPatch = ''
     ${jq}/bin/jq '
-      .packages["node_modules/@earendil-works/pi-agent-core"].integrity = "sha512-8Pn3wSCxj0cfo5I6jxQYVB/3uuQRmHhAlEclyjqpOuMEdQMIODHizRogv56FLdbU+dTiGnybeHQ2N+sV1/L2YA=="
-      | .packages["node_modules/@earendil-works/pi-ai"].integrity = "sha512-6MzsrYIYNVlE7SfpbL2yYb67Qo58p/7Q+xWG1RZvoX1P80aRCHSod2/13aFpxkow1lPO2LEh3c495J0Gwmyjig=="
-      | .packages["node_modules/@earendil-works/pi-client"].integrity = "sha512-/RFSPhD/bZbpOp1oJj+UneSUFSgZhWxzcSENUY+8+8xhoBrWXMYI2t77XNx4Yf+c8YK2qTHquForhNcelYpXvg=="
-      | .packages["node_modules/@earendil-works/pi-protocol"].integrity = "sha512-jbBh03fkeckWEroHpcZBr4w5/Ibat8WwdXFlXHivYQImrQNFtLpDeL0t1cku4hmK0q3pceIRQHkw4fwbM4YILQ=="
-      | .packages["node_modules/@earendil-works/pi-telemetry"].integrity = "sha512-wg5caea7uIv1BHRBm2Y116RvFG4oSAiP5qk9tA2463PDGIr4K8M1Ceyyg5DOpF/shUUl0gk826yQJAeAcHYB9g=="
-      | .packages["node_modules/@earendil-works/pi-tui"].integrity = "sha512-ds2TLihOnM5sLJB3VpXV6y0uR5efVuHf4MN7yDpsty6hA2DUO/EDVzjp/0od0G2JslzVLMjT8T8zavtxVb+qbg=="
+      .packages["node_modules/@earendil-works/chord"].integrity = "sha512-VDlkEC3dhCzQ5fcyH1OhG19dq+6jCn+rqc/iXFivwDYGR5anwo2RCiXij9PpHhqNR5GuhhE+Er69Zi1Sn4eY6w=="
+      | .packages["node_modules/@earendil-works/pi-agent-core"].integrity = "sha512-hIXIP3eAWueAYiAl8aMvWCvvZ8Q5gT3Dip5bE5uJyIGh4+YlWRjtMLI4BaeoXoSs93zndjue61u1B/vhefLnuA=="
+      | .packages["node_modules/@earendil-works/pi-ai"].integrity = "sha512-+VgVIJDkDO2efYJKEEqvPTH4zmnIaXdAppGbO+vKFA9qy5PdhFiAenuFAkU+oiCSfOC4dMHDyrjdQeL4ZoC5CQ=="
+      | .packages["node_modules/@earendil-works/pi-telemetry"].integrity = "sha512-Bg/YN6kA7Swja/NQxka8xFdecb4E/auIEGF2G5A25EaQXhRnPj300/7/KpgsDDMYUzHTDAv4RyUxaQPJKW81Rw=="
+      | .packages["node_modules/@earendil-works/pi-tui"].integrity = "sha512-OIzw9efInmO4WOBnD4TxcTdBjmzvYJpzslkgoUro946nEGoYWg5rwv1p4fDt3/JvMx9QybryUCUwlm7j8Dreig=="
     ' npm-shrinkwrap.json > npm-shrinkwrap.json.new
     mv npm-shrinkwrap.json.new npm-shrinkwrap.json
     ${jq}/bin/jq 'del(.devDependencies)' package.json > package.json.new

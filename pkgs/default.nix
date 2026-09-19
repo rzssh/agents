@@ -7,23 +7,8 @@ let
       inputs.hermes-agent.inputs.npm-lockfile-fix.packages.${pkgs.stdenv.hostPlatform.system}.default;
     rev = inputs.hermes-agent.rev or null;
   };
-  openspec = inputs.openspec.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
-    pnpmDeps = pkgs.fetchPnpmDeps {
-      inherit (old) pname version src;
-      pnpm = pkgs.pnpm_10;
-      fetcherVersion = 3;
-      hash = "sha256-yitHBdoabDcUbaixSKmOddpwrbi/bmxDcHP3okoxVqM=";
-    };
-    nativeBuildInputs = with pkgs; [
-      nodejs_24
-      npmHooks.npmInstallHook
-      pnpmConfigHook
-      pnpm_10
-    ];
-  });
 in
 {
-  babysitter = pkgs.callPackage ./babysitter/package.nix { };
   chrome-devtools-axi = pkgs.callPackage ./axi/package.nix {
     pname = "chrome-devtools-axi";
     version = "0.1.26";
@@ -32,7 +17,6 @@ in
     pnpmHash = "sha256-eyOhZEsGecgLBvxIBPPvjw9MSJZ4rXIFyktz+Ax9qkE=";
   };
   chrome-devtools-mcp = pkgs.callPackage ./chrome-devtools-mcp/package.nix { };
-  crit = inputs.crit.packages.${pkgs.stdenv.hostPlatform.system}.default;
   gh-axi = pkgs.callPackage ./axi/package.nix {
     pname = "gh-axi";
     version = "0.1.30";
@@ -41,7 +25,7 @@ in
     pnpmHash = "sha256-Ps93wg2mN1g1Rq4SY1FuNh8g9CF3o1WjCtioBWLcogU=";
   };
   herdr = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  inherit hermes openspec;
+  inherit hermes;
   lavish-axi = pkgs.callPackage ./axi/package.nix {
     pname = "lavish-axi";
     version = "0.1.47";

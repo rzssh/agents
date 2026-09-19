@@ -13,10 +13,8 @@ let
   aiRun = "${lib.getExe pkgs.python3} ${source}/bin/ai-run";
   localPkgs = import ../pkgs { inherit pkgs inputs; };
   inherit (localPkgs)
-    crit
     herdr
     hermes
-    openspec
     treehouse
     tuicr
     ;
@@ -156,7 +154,7 @@ in
     CAVEMAN_DEFAULT_MODE = "ultra";
     CHROME_DEVTOOLS_AXI_MCP_PATH = chromeDevtoolsMcpPath;
     CHROME_DEVTOOLS_EXECUTABLE_PATH = lib.getExe pkgs.google-chrome;
-    OPENSPEC_TELEMETRY = "0";
+    PI_COMPUTER_USE_CHROME_EXECUTABLE = lib.getExe pkgs.google-chrome;
     NO_MISTAKES_TELEMETRY = "0";
     NO_MISTAKES_NO_UPDATE_CHECK = "1";
     NPM_CONFIG_CACHE = npmCache;
@@ -167,7 +165,6 @@ in
   };
 
   home.packages = [
-    localPkgs.babysitter
     localPkgs.chrome-devtools-axi
     localPkgs.chrome-devtools-mcp
     localPkgs.gh-axi
@@ -175,8 +172,6 @@ in
     localPkgs.no-mistakes
     localPkgs.quota-axi
     localPkgs.tasks-axi
-    crit
-    openspec
     pkgs.opencode
     pkgs.socat
     hermes
@@ -370,7 +365,6 @@ in
         pkgs.gh
         pkgs.git
         pkgs.nodejs_24
-        crit
         herdr
         treehouse
       ]

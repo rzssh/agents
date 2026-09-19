@@ -1,26 +1,5 @@
 {
   "nodes": {
-    "crit": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1784295983,
-        "narHash": "sha256-7mvSuODYWxAhrjKMPbSt8n5jBHoB8xoG+amIT9vS9n8=",
-        "owner": "tomasz-tomczyk",
-        "repo": "crit",
-        "rev": "ffa3b822fe6a1f6e5a38664765fbe472b4b4f861",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tomasz-tomczyk",
-        "ref": "v0.18.1",
-        "repo": "crit",
-        "type": "github"
-      }
-    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -73,16 +52,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1787161794,
-        "narHash": "sha256-sEGIN3dLZasaHob3EHscWBCIQHflMQVchYmzgsETDk4=",
+        "lastModified": 1789583424,
+        "narHash": "sha256-N6+kprfWRyh0AkAiopkGsNXUGGORyPVFHEaDHCpGQs8=",
         "owner": "herdrdev",
         "repo": "herdr",
-        "rev": "9eb521456ac0d19d3ab3d9d7cea3cca10baa8a4c",
+        "rev": "065ef9d6a531c49fb8bee7e818ef837065b21ee9",
         "type": "github"
       },
       "original": {
         "owner": "herdrdev",
-        "ref": "v0.8.2",
+        "ref": "v0.9.1",
         "repo": "herdr",
         "type": "github"
       }
@@ -119,11 +98,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769799857,
-        "narHash": "sha256-88IFXZ7Sa1vxbz5pty0Io5qEaMQMMUPMonLa3Ls/ss4=",
+        "lastModified": 1782220280,
+        "narHash": "sha256-thLTFbp9D5Qknmh8q/v4FRpLGphUSijT3E86cbLYTXo=",
         "owner": "nix-community",
         "repo": "naersk",
-        "rev": "9d4ed44d8b8cecdceb1d6fd76e74123d90ae6339",
+        "rev": "9aa07bb0256d300219b30622d2454e85f7f3667e",
         "type": "github"
       },
       "original": {
@@ -186,37 +165,17 @@
         "type": "github"
       }
     },
-    "openspec": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1784847211,
-        "narHash": "sha256-gfqK3TFOxblr5e/BvmCfoXhftIz+80a6IXcyebERe8A=",
-        "owner": "Fission-AI",
-        "repo": "OpenSpec",
-        "rev": "19d41714c8b790488732687443713e406ef5aeef",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Fission-AI",
-        "repo": "OpenSpec",
-        "type": "github"
-      }
-    },
     "pi-coding-agent-src": {
       "flake": false,
       "locked": {
         "lastModified": 499162500,
-        "narHash": "sha256-9dv6prGh2inmg4pEFkC8OsU/Eh18L3wCvcUde5rOMdc=",
+        "narHash": "sha256-5Nv8jh83a+gxIBMbgaXDndMqbiyRZ0uETGwAFlI+83U=",
         "type": "tarball",
-        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.2.tgz"
+        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.85.1.tgz"
       },
       "original": {
         "type": "tarball",
-        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.2.tgz"
+        "url": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.85.1.tgz"
       }
     },
     "pyproject-build-systems": {
@@ -271,11 +230,9 @@
     },
     "root": {
       "inputs": {
-        "crit": "crit",
         "herdr": "herdr",
         "hermes-agent": "hermes-agent",
         "nixpkgs": "nixpkgs_2",
-        "openspec": "openspec",
         "pi-coding-agent-src": "pi-coding-agent-src",
         "treehouse": "treehouse",
         "tuicr": "tuicr"
@@ -364,16 +321,16 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1785972702,
-        "narHash": "sha256-9QEDfDwb9Elm4R40/0pBz0EgTOoJJWWNraz2D0H6bAo=",
+        "lastModified": 1788370327,
+        "narHash": "sha256-nbjvSRrbJ4LQrn8l0FJ8R5PNpq7gcQR8m78agL59zqs=",
         "owner": "agavra",
         "repo": "tuicr",
-        "rev": "8323f135018ab0c1d07e228a423bd504c3503593",
+        "rev": "b55e218f6d38a87ca4a6d9924a4c50b5f601dd07",
         "type": "github"
       },
       "original": {
         "owner": "agavra",
-        "ref": "v0.21.0",
+        "ref": "v0.25.0",
         "repo": "tuicr",
         "type": "github"
       }

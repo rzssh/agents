@@ -24,7 +24,6 @@ SAFE_KEYS = {
     "LANG",
     "LOGNAME",
     "NPM_CONFIG_CACHE",
-    "OPENSPEC_TELEMETRY",
     "PAGER",
     "PATH",
     "PI_PROJECTS_ROOT",

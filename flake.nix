@@ -4,25 +4,15 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    crit = {
-      url = "github:tomasz-tomczyk/crit/v0.18.1";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     herdr = {
-      url = "github:herdrdev/herdr/v0.8.2";
+      url = "github:herdrdev/herdr/v0.9.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hermes-agent.url = "github:NousResearch/hermes-agent";
 
-    openspec = {
-      url = "github:Fission-AI/OpenSpec";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     pi-coding-agent-src = {
-      url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.84.2.tgz";
+      url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.85.1.tgz";
       flake = false;
     };
 
@@ -32,7 +22,7 @@
     };
 
     tuicr = {
-      url = "github:agavra/tuicr/v0.21.0";
+      url = "github:agavra/tuicr/v0.25.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
