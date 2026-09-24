@@ -197,6 +197,7 @@ in
     ".pi/agent/extensions/session-name.ts".source = link "agents/pi/extensions/session-name.ts";
     ".pi/agent/extensions/web.ts".source = link "agents/pi/extensions/web.ts";
     ".pi/agent/lib/deferred-tools.ts".source = link "agents/pi/lib/deferred-tools.ts";
+    ".pi/agent/lib/quiz.ts".source = link "agents/pi/lib/quiz.ts";
     ".pi/agent/lib/session-name.ts".source = link "agents/pi/lib/session-name.ts";
     ".pi/agent/lib/web.ts".source = link "agents/pi/lib/web.ts";
     ".config/opencode/AGENTS.md".source = link "agents/AGENTS.md";
@@ -324,6 +325,7 @@ in
         managed_link "${source}/agents/pi/extensions/session-name.ts" "$pi/extensions/session-name.ts"
         managed_link "${source}/agents/pi/extensions/web.ts" "$pi/extensions/web.ts"
         managed_link "${source}/agents/pi/lib/deferred-tools.ts" "$pi/lib/deferred-tools.ts"
+        managed_link "${source}/agents/pi/lib/quiz.ts" "$pi/lib/quiz.ts"
         managed_link "${source}/agents/pi/lib/session-name.ts" "$pi/lib/session-name.ts"
         managed_link "${source}/agents/pi/lib/web.ts" "$pi/lib/web.ts"
         managed_link "${source}/agents/AGENTS.md" "$opencode/AGENTS.md"
