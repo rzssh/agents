@@ -193,6 +193,7 @@ in
     ".pi/agent/AGENTS.md".source = link "agents/AGENTS.md";
     ".pi/agent/extensions/ask-user.ts".source = link "agents/pi/extensions/ask-user.ts";
     ".pi/agent/extensions/computer-tools.ts".source = link "agents/pi/extensions/computer-tools.ts";
+    ".pi/agent/extensions/quiz.ts".source = link "agents/pi/extensions/quiz.ts";
     ".pi/agent/extensions/session-name.ts".source = link "agents/pi/extensions/session-name.ts";
     ".pi/agent/extensions/web.ts".source = link "agents/pi/extensions/web.ts";
     ".pi/agent/lib/deferred-tools.ts".source = link "agents/pi/lib/deferred-tools.ts";
@@ -319,6 +320,7 @@ in
         managed_link "${source}/agents/AGENTS.md" "$pi/AGENTS.md"
         managed_link "${source}/agents/pi/extensions/ask-user.ts" "$pi/extensions/ask-user.ts"
         managed_link "${source}/agents/pi/extensions/computer-tools.ts" "$pi/extensions/computer-tools.ts"
+        managed_link "${source}/agents/pi/extensions/quiz.ts" "$pi/extensions/quiz.ts"
         managed_link "${source}/agents/pi/extensions/session-name.ts" "$pi/extensions/session-name.ts"
         managed_link "${source}/agents/pi/extensions/web.ts" "$pi/extensions/web.ts"
         managed_link "${source}/agents/pi/lib/deferred-tools.ts" "$pi/lib/deferred-tools.ts"
