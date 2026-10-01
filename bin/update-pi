@@ -59,10 +59,11 @@ OLD_VERSION="$current" NEW_VERSION="$latest" perl -0pi -e '
 	die "version not found\n" unless $count >= 1;
 ' "$flake_file" "$package_file"
 
+replace_integrity "@earendil-works/chord" "$(dependency_integrity "@earendil-works/chord")"
 replace_integrity "@earendil-works/pi-agent-core" "$(dependency_integrity "@earendil-works/pi-agent-core")"
 replace_integrity "@earendil-works/pi-ai" "$(dependency_integrity "@earendil-works/pi-ai")"
-replace_integrity "@earendil-works/pi-client" "$(dependency_integrity "@earendil-works/pi-client")"
-replace_integrity "@earendil-works/pi-protocol" "$(dependency_integrity "@earendil-works/pi-protocol")"
+replace_integrity "@earendil-works/pi-codemode" "$(dependency_integrity "@earendil-works/pi-codemode")"
+replace_integrity "@earendil-works/pi-mcp" "$(dependency_integrity "@earendil-works/pi-mcp")"
 replace_integrity "@earendil-works/pi-telemetry" "$(dependency_integrity "@earendil-works/pi-telemetry")"
 replace_integrity "@earendil-works/pi-tui" "$(dependency_integrity "@earendil-works/pi-tui")"
 

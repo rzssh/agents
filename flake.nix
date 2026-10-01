@@ -4,15 +4,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    herdr = {
-      url = "github:herdrdev/herdr/v0.9.1";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    herdr.url = "github:herdrdev/herdr/v0.9.3";
 
     hermes-agent.url = "github:NousResearch/hermes-agent";
 
     pi-coding-agent-src = {
-      url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.85.1.tgz";
+      url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.99.1.tgz";
       flake = false;
     };
 

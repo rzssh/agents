@@ -157,7 +157,7 @@ refresh_metadata() {
     previous_path=$(jq -r '.result.workspace.tokens.workspace_path // ""' <<< "$info")
     managed_label=$(jq -r '.result.workspace.tokens.ai_workspace_label // ""' <<< "$info")
     base=$(basename -- "$path")
-    if [[ -n $managed_label && $label != "$managed_label" ]] ||
+    if [[ -z $managed_label || $label != "$managed_label" ]] ||
         [[ -n $previous_path && $(base_from_label "${managed_label:-$label}") != "$(basename -- "$previous_path")" ]]; then
         base=$(base_from_label "$label")
     fi
