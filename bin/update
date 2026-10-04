@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+python3 ./bin/update-sources.py flake.nix agents/pi/settings.json
+nix flake update --refresh
+for package in chrome-devtools-axi gh-axi lavish-axi quota-axi tasks-axi; do
+    nix-update --flake --override-filename "pkgs/$package/package.nix" "$package"
+done
+nix-update --flake no-mistakes
+nix-update --flake chrome-devtools-mcp
+bash ./bin/update-pi

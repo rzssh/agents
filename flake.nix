@@ -9,17 +9,17 @@
     hermes-agent.url = "github:NousResearch/hermes-agent";
 
     pi-coding-agent-src = {
-      url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-0.99.1.tgz";
+      url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.0.1.tgz";
       flake = false;
     };
 
     treehouse = {
-      url = "github:kunchenguid/treehouse/v2.0.1";
+      url = "github:kunchenguid/treehouse/v3.1.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     tuicr = {
-      url = "github:agavra/tuicr/v0.25.0";
+      url = "github:agavra/tuicr/v0.27.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -42,6 +42,7 @@
             nativeBuildInputs = [
               pkgs.biome
               pkgs.nodejs_24
+              pkgs.python3
               pkgs.ruff
               pkgs.shellcheck
               pkgs.tsx
@@ -53,8 +54,9 @@
             cd source
             biome check agents/pi
             tsx --test agents/pi/lib/*.test.ts
-            ruff check bin/ai-run bin/ai-workspace-picker
-            shellcheck bin/ai-workspace bin/firstmate bin/update-pi
+            python3 bin/test_update_sources.py
+            ruff check bin/ai-run bin/ai-workspace-picker bin/update-sources.py bin/test_update_sources.py
+            shellcheck bin/ai-workspace bin/firstmate bin/update-pi bin/update
             touch "$out"
           '';
 

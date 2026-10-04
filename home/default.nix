@@ -347,6 +347,7 @@ in
       json_overlay "${source}/agents/claude/settings.json" "$claude/settings.json"
       if [ "$profile" = personal ]; then
         json_overlay "${source}/agents/pi/settings.json" "$pi/settings.json"
+        (cd "$HOME" && PI_CODING_AGENT_DIR="$pi" ${localPkgs.pi-coding-agent}/bin/pi update --extensions)
       fi
       yaml_overlay "${source}/agents/hermes/config.yaml" "$hermes_home/config.yaml"
 

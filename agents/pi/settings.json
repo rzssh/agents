@@ -11,17 +11,17 @@
 	"enabledModels": ["openai-codex/*"],
 	"packages": [
 		{
-			"source": "git:github.com/DietrichGebert/ponytail@16f29800fd2681bdf24f3eb4ccffe38be3baec6b",
+			"source": "git:github.com/DietrichGebert/ponytail@c982cd411abb53323c4baa1baa3c2f020b8d0b08",
 			"extensions": [],
 			"skills": ["ponytail", "ponytail-review"]
 		},
 		{
-			"source": "git:github.com/JuliusBrussee/caveman@0d95a81d35a9f2d123a5e9430d1cfc43d55f1bb0",
+			"source": "git:github.com/JuliusBrussee/caveman@aeb45e2f787c0757a8af383a291a280cb6aeb4c1",
 			"extensions": [],
 			"skills": ["caveman-commit", "caveman-review"]
 		},
 		"npm:@injaneity/pi-computer-use@0.5.1",
-		"npm:@agent-sh/computer-use-linux@0.7.8",
+		"npm:@agent-sh/computer-use-linux@0.7.10",
 		"npm:@juicesharp/rpiv-ask-user-question@2.12.0",
 		"npm:@ogulcancelik/pi-codex-compaction@0.1.5"
 	]

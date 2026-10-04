@@ -7,7 +7,7 @@
 }:
 
 let
-  version = "1.6.0";
+  version = "1.10.1";
 in
 stdenvNoCC.mkDerivation {
   pname = "chrome-devtools-mcp";
@@ -15,7 +15,7 @@ stdenvNoCC.mkDerivation {
 
   src = fetchurl {
     url = "https://registry.npmjs.org/chrome-devtools-mcp/-/chrome-devtools-mcp-${version}.tgz";
-    hash = "sha512-VZX6f/OjQSYhy2BGGRs+y3LsrsAQAz/HwZCWKBLVyST/4r/3zjVEjjVW7gMCVbRDuspnVdcp5hQDPrQ5UFrdZw==";
+    hash = "sha256-ASy89ugy1PZwna0MIde+8XCJ6Ure6c8zF50V6gqa3ys=";
   };
 
   sourceRoot = "package";
